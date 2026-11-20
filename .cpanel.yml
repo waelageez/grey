@@ -1,0 +1,9 @@
+---
+# cPanel Git Version Control runs these when you press "Deploy HEAD Commit"
+# (Git Version Control > Manage > Pull or Deploy). It copies the website from
+# the cloned repository into the live folder. Files are added or overwritten,
+# never deleted, so anything else in public_html is left alone.
+deployment:
+  tasks:
+    - export DEPLOYPATH=$HOME/public_html/
+    - /bin/cp -R *.html .htaccess css js fonts assets 3d $DEPLOYPATH
