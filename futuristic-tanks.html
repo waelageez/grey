@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Futuristic Tank Telemetry - Grey Agency</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #030810;
+            --neon-blue: #00f3ff;
+            --neon-purple: #b026ff;
+            --neon-green: #00ff66;
+            --glass-bg: rgba(0, 15, 30, 0.65);
+            --glass-border: rgba(0, 243, 255, 0.4);
+            --text-main: #e0f7fa;
+            --text-dim: #8ab4f8;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 50% 50%, #081222 0%, var(--bg-color) 100%),
+                linear-gradient(rgba(0,243,255,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,243,255,0.04) 1px, transparent 1px);
+            background-size: 100% 100%, 40px 40px, 40px 40px;
+            background-position: center;
+            color: var(--text-main);
+            font-family: 'Rajdhani', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            position: relative;
+        }
+
+        body::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(to bottom, transparent, transparent 3px, rgba(0, 0, 0, 0.3) 4px);
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        body::before {
+            content: "O.R.I.O.N // FACILITY INTEL";
+            position: absolute;
+            bottom: 20px; right: 20px;
+            font-size: 12px; font-weight: bold;
+            color: rgba(255,255,255,0.2);
+            letter-spacing: 4px; z-index: 50;
+        }
+
+        /* HEADER */
+        header {
+            position: absolute;
+            top: 0; left: 0; width: 100%;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 50;
+            border-bottom: 1px solid var(--glass-border);
+            background: linear-gradient(180deg, rgba(0,10,20,0.9) 0%, transparent 100%);
+        }
+
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 28px;
+            font-weight: 900;
+            color: var(--neon-blue);
+            text-shadow: 0 0 15px var(--neon-blue);
+            letter-spacing: 3px;
+        }
+
+        .status-badge {
+            padding: 8px 16px;
+            background: rgba(0, 255, 102, 0.1);
+            border: 1px solid var(--neon-green);
+            color: var(--neon-green);
+            border-radius: 4px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            box-shadow: 0 0 10px rgba(0, 255, 102, 0.2);
+            animation: pulse-green 2s infinite;
+        }
+
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 5px rgba(0, 255, 102, 0.2); }
+            50% { box-shadow: 0 0 20px rgba(0, 255, 102, 0.6); }
+            100% { box-shadow: 0 0 5px rgba(0, 255, 102, 0.2); }
+        }
+
+        /* PANELS */
+        .panel {
+            position: absolute;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 6px;
+            padding: 24px;
+            z-index: 40;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.7);
+        }
+
+        .panel-left { top: 120px; left: 40px; width: 320px; }
+        .panel-right { top: 120px; right: 40px; width: 320px; }
+
+        .panel-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 18px;
+            color: var(--neon-blue);
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(0, 243, 255, 0.3);
+            padding-bottom: 8px;
+        }
+
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 14px;
+            font-size: 18px;
+        }
+        
+        .data-label { color: var(--text-dim); }
+        .data-value { font-weight: bold; font-family: 'Orbitron', sans-serif; text-shadow: 0 0 8px rgba(255,255,255,0.4); }
+
+        .console-text {
+            margin-top: 25px;
+            font-size: 13px;
+            color: var(--neon-green);
+            line-height: 1.6;
+            text-shadow: 0 0 5px var(--neon-green);
+        }
+
+        /* SCENE WRAPPER */
+        #scene {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(1);
+            width: 1100px;
+            height: 750px;
+            perspective: 1000px;
+        }
+
+        @media (max-width: 1400px) { #scene { transform: translate(-50%, -50%) scale(0.85); } }
+        @media (max-width: 1100px) { #scene { transform: translate(-50%, -50%) scale(0.65); } }
+
+        /* FLOOR / CONTAINMENT WALL */
+        .containment-wall {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .containment-svg {
+            width: 100%; height: 100%;
+            filter: drop-shadow(0 0 20px rgba(0, 243, 255, 0.2));
+        }
+
+        /* PIPES */
+        .pipe-svg {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none;
+        }
+        .pipe-path {
+            fill: none;
+            stroke: rgba(0, 243, 255, 0.8);
+            stroke-width: 4;
+            stroke-dasharray: 10, 10;
+            filter: drop-shadow(0 0 5px var(--neon-blue));
+            animation: dash 1s linear infinite reverse;
+        }
+        @keyframes dash { to { stroke-dashoffset: 40; } }
+
+        /* TANK CSS */
+        .tank-wrapper {
+            position: absolute;
+            transition: transform 0.3s ease, filter 0.3s ease;
+        }
+
+        .tank-wrapper:hover {
+            transform: translateY(-15px);
+            filter: brightness(1.3) contrast(1.1);
+            z-index: 100 !important;
+        }
+
+        .tank { position: relative; width: 100%; height: 100%; }
+
+        .tank-liquid-bottom {
+            position: absolute; left: 0; width: 100%;
+            border-radius: 50%; z-index: 1;
+        }
+
+        .tank-liquid-body {
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            z-index: 2; transition: height 1s ease-in-out;
+        }
+
+        .tank-liquid-top {
+            position: absolute; left: 0; width: 100%;
+            border-radius: 50%; z-index: 3; transition: bottom 1s ease-in-out;
+        }
+
+        .tank-shell-bottom {
+            position: absolute; left: 0; width: 100%;
+            border-radius: 50%; z-index: 4;
+            border: 2px solid transparent; 
+            pointer-events: none;
+        }
+
+        .tank-shell-body {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            border-left: 2px solid; border-right: 2px solid;
+            background: linear-gradient(90deg, rgba(0,50,80,0.5), rgba(0,50,80,0.1) 50%, rgba(0,50,80,0.5));
+            z-index: 5; pointer-events: auto; cursor: crosshair;
+        }
+
+        .tank-top {
+            position: absolute; left: 0; width: 100%;
+            border-radius: 50%; z-index: 6;
+            background: rgba(0, 15, 25, 0.95);
+            border: 2px solid;
+        }
+
+        /* TOOLTIP */
+        .tank-tooltip {
+            position: absolute;
+            top: -120px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 10, 20, 0.95);
+            border: 1px solid var(--neon-blue);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 4px;
+            width: 170px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 200;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.5);
+        }
+
+        .tank-wrapper:hover .tank-tooltip { opacity: 1; }
+
+        .tooltip-title { font-family: 'Orbitron', sans-serif; font-size: 16px; font-weight: bold; color: var(--neon-blue); margin-bottom: 8px; border-bottom: 1px solid rgba(0,243,255,0.3); padding-bottom: 4px; }
+        .tooltip-data { font-size: 14px; display: flex; justify-content: space-between; margin-bottom: 4px; }
+        .tooltip-data span:first-child { color: var(--text-dim); }
+
+        /* Small Pump Box */
+        .pump-box {
+            position: absolute;
+            width: 40px; height: 50px;
+            background: linear-gradient(135deg, rgba(0,243,255,0.3), rgba(0,243,255,0.1));
+            border: 2px solid var(--neon-blue);
+            box-shadow: 0 0 15px rgba(0,243,255,0.5);
+            z-index: 35;
+            display: flex;
+            align-items: flex-start; justify-content: center;
+            padding-top: 10px;
+            border-radius: 4px;
+        }
+        .pump-box::after {
+            content: ""; width: 12px; height: 12px; border-radius: 50%; background: var(--neon-green);
+            animation: blink 0.8s infinite alternate;
+        }
+        @keyframes blink { 0% { opacity: 0.3; box-shadow: 0 0 0 var(--neon-green); } 100% { opacity: 1; box-shadow: 0 0 15px var(--neon-green); } }
+
+        /* HUD Circle */
+        .hud-circle {
+            position: absolute;
+            bottom: 40px; left: 40px;
+            width: 160px; height: 160px;
+            border-radius: 50%;
+            border: 1px dashed rgba(0, 255, 102, 0.4);
+            display: flex;
+            align-items: center; justify-content: center;
+            animation: spin 40s linear infinite;
+        }
+        .hud-circle-inner {
+            width: 120px; height: 120px;
+            border-radius: 50%;
+            border: 2px solid rgba(0, 243, 255, 0.7);
+            border-top-color: transparent;
+            border-bottom-color: transparent;
+            animation: spin 15s linear infinite reverse;
+        }
+        .hud-crosshair {
+            position: absolute; width: 10px; height: 10px; background: rgba(0,255,102,0.8); border-radius: 50%;
+        }
+
+        /* Sector Bar Chart */
+        .chart-bar { transition: height 0.5s ease; width: 18%; position: relative; }
+        .chart-bar::before { content: ""; position: absolute; bottom: -20px; width: 100%; text-align: center; font-size: 10px; color: var(--text-dim); }
+        .chart-bar:nth-child(1)::before { content: "T1"; } .chart-bar:nth-child(2)::before { content: "T2"; }
+        .chart-bar:nth-child(3)::before { content: "T3"; } .chart-bar:nth-child(4)::before { content: "T4"; }
+        .chart-bar:nth-child(5)::before { content: "T5"; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">O.R.I.O.N. FACILITY SEC-09</div>
+        <div class="status-badge" id="system-status">SYSTEM NOMINAL</div>
+    </header>
+
+    <div class="panel panel-left">
+        <div class="panel-title">GLOBAL TELEMETRY</div>
+        <div class="data-row">
+            <span class="data-label">Total Volume</span>
+            <span class="data-value" id="tot-cap">342,800 L</span>
+        </div>
+        <div class="data-row">
+            <span class="data-label">Main Flow</span>
+            <span class="data-value" id="flow-rate">324.5 L/s</span>
+        </div>
+        <div class="data-row">
+            <span class="data-label">Core Pressure</span>
+            <span class="data-value">12.4 MPa</span>
+        </div>
+        <div class="data-row">
+            <span class="data-label">Ambient Temp</span>
+            <span class="data-value">24.2 °C</span>
+        </div>
+        <div class="console-text" id="console-output">
+            > INITIALIZING NEURAL UPLINK... OK<br>
+            > SCANNING CONTAINMENT SECTOR... CLEAR<br>
+            > SYNCING SENSORS... OK
+        </div>
+    </div>
+
+    <div class="panel panel-right">
+        <div class="panel-title">SECTOR LOAD</div>
+        <div style="height: 130px; display: flex; align-items: flex-end; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.2); margin-bottom: 25px;">
+            <div class="chart-bar" style="height: 40%; background: var(--neon-blue);"></div>
+            <div class="chart-bar" style="height: 70%; background: var(--neon-purple);"></div>
+            <div class="chart-bar" style="height: 50%; background: var(--neon-green);"></div>
+            <div class="chart-bar" style="height: 90%; background: var(--neon-blue);"></div>
+            <div class="chart-bar" style="height: 60%; background: var(--neon-green);"></div>
+        </div>
+        <div class="data-row">
+            <span class="data-label">Energy Draw</span>
+            <span class="data-value">4.2 MW</span>
+        </div>
+        <div class="data-row">
+            <span class="data-label">Efficiency</span>
+            <span class="data-value" style="color: var(--neon-green);">98.7%</span>
+        </div>
+    </div>
+
+    <div class="hud-circle">
+        <div class="hud-circle-inner"></div>
+        <div class="hud-crosshair"></div>
+    </div>
+
+    <div id="scene">
+        <!-- SVG Containment Tray & Wiring -->
+        <div class="containment-wall">
+            <svg class="containment-svg" viewBox="0 0 1100 750">
+                <!-- Outer Base L-Shape Polygon -->
+                <polygon points="500,250 150,425 250,475 500,350 850,525 950,475" 
+                         fill="rgba(0, 25, 45, 0.45)" 
+                         stroke="var(--neon-blue)" 
+                         stroke-width="3" />
+                
+                <!-- Inner Base Line Highlights to imply structure -->
+                <path d="M150,425 L500,250 L950,475" fill="none" stroke="rgba(0,243,255,0.5)" stroke-width="1.5" />
+                <path d="M250,475 L500,350 L850,525" fill="none" stroke="rgba(0,243,255,0.5)" stroke-width="1.5" />
+            </svg>
+        </div>
+
+        <svg class="pipe-svg" viewBox="0 0 1100 750">
+            <!-- Feed lines branching out from central pump -->
+            <path class="pipe-path" d="M50,525 L500,300 L900,500" />
+            <circle cx="50" cy="525" r="4" fill="var(--neon-blue)" />
+            <circle cx="200" cy="450" r="4" fill="var(--neon-blue)" />
+            <circle cx="350" cy="375" r="4" fill="var(--neon-blue)" />
+            <circle cx="500" cy="300" r="4" fill="var(--neon-blue)" />
+            <circle cx="633" cy="366" r="4" fill="var(--neon-blue)" />
+            <circle cx="766" cy="433" r="4" fill="var(--neon-blue)" />
+            <circle cx="900" cy="500" r="4" fill="var(--neon-blue)" />
+        </svg>
+
+        <!-- Dynamic Tanks will be injected here via JS -->
+    </div>
+
+    <script>
+        // Tank Layout Data reflecting the actual isometric engineering limits
+        const tanksData = [
+            { id: 'T-01', x: 130, y: 270, w: 140, h: 180, z: 60, color: '#00f3ff', level: 75, temp: '-162°C' }, // Front Left
+            { id: 'T-02', x: 280, y: 195, w: 140, h: 180, z: 50, color: '#00f3ff', level: 50, temp: '-160°C' }, // Mid Left
+            { id: 'T-03', x: 420, y: 60,  w: 160, h: 240, z: 40, color: '#00ff66', level: 85, temp: '-164°C' }, // Main Corner Back
+            { id: 'T-04', x: 568, y: 186, w: 130, h: 180, z: 45, color: '#b026ff', level: 40, temp: '-158°C' }, // Mid Right
+            { id: 'T-05', x: 706, y: 273, w: 120, h: 160, z: 55, color: '#00ff66', level: 60, temp: '-161°C' }, // Far Right 1
+            { id: 'T-06', x: 845, y: 350, w: 110, h: 150, z: 65, color: '#b026ff', level: 90, temp: '-163°C' }, // Far Right Front
+        ];
+
+        const scene = document.getElementById('scene');
+
+        // Draw Pump Box
+        const pump = document.createElement('div');
+        pump.className = 'pump-box';
+        pump.style.left = '30px'; // Centers around 50px
+        pump.style.top = '500px'; 
+        scene.appendChild(pump);
+
+        tanksData.forEach(tank => {
+            const ry = tank.w * 0.28; // Dynamic isometric radius
+
+            const liqBodyBg = `linear-gradient(90deg, ${tank.color}55 0%, ${tank.color}cc 50%, ${tank.color}55 100%)`;
+            const liqBotBg = `${tank.color}99`;
+            const liqTopBg = `${tank.color}dd`;
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'tank-wrapper';
+            wrapper.style.left = tank.x + 'px';
+            wrapper.style.top = tank.y + 'px';
+            wrapper.style.width = tank.w + 'px';
+            wrapper.style.height = tank.h + 'px';
+            wrapper.style.zIndex = tank.z;
+
+            wrapper.innerHTML = `
+                <div class="tank-tooltip">
+                    <div class="tooltip-title">TANK ${tank.id}</div>
+                    <div class="tooltip-data"><span>Fill Level:</span> <span class="fill-lbl" style="color: ${tank.color};">${tank.level}%</span></div>
+                    <div class="tooltip-data"><span>Contents:</span> <span style="font-weight: bold;">LNG</span></div>
+                    <div class="tooltip-data"><span>Temperature:</span> <span>${tank.temp}</span></div>
+                </div>
+
+                <div class="tank-antenna" style="position: absolute; top: ${-ry/2 - 25}px; left: 50%; width: 2px; height: 25px; background: rgba(255,255,255,0.4); transform: translateX(-50%); z-index: 10;"></div>
+                <div class="tank-antenna-dot" style="position: absolute; top: ${-ry/2 - 27}px; left: 50%; width: 6px; height: 6px; background: #ff0044; border-radius: 50%; transform: translateX(-50%); z-index: 11; animation: blink ${Math.random() + 0.5}s infinite alternate; box-shadow: 0 0 10px #ff0044;"></div>
+                
+                <div class="tank">
+                    <div class="tank-liquid-bottom" style="bottom: ${-ry/2}px; height: ${ry}px; background: ${liqBotBg}; box-shadow: 0 5px 15px ${tank.color};"></div>
+                    <div class="tank-liquid-body" style="height: ${tank.level}%; background: ${liqBodyBg}; box-shadow: 0 0 20px ${tank.color}88;"></div>
+                    <div class="tank-liquid-top" style="bottom: calc(${tank.level}% - ${ry/2}px); height: ${ry}px; background: ${liqTopBg}; border: 1px solid rgba(255,255,255,0.9); box-shadow: 0 0 20px ${tank.color}ff;"></div>
+                    
+                    <div class="tank-shell-bottom" style="bottom: ${-ry/2}px; height: ${ry}px; border-bottom-color: ${tank.color}; box-shadow: 0 15px 25px -5px rgba(0,0,0,0.9);"></div>
+                    <div class="tank-shell-body" style="border-left-color: ${tank.color}; border-right-color: ${tank.color};"></div>
+                    <div class="tank-top" style="top: ${-ry/2}px; height: ${ry}px; border-color: ${tank.color}; box-shadow: inset 0 0 25px ${tank.color}aa;"></div>
+                </div>
+            `;
+            
+            scene.appendChild(wrapper);
+
+            // Animate Liquid Level
+            setInterval(() => {
+                const body = wrapper.querySelector('.tank-liquid-body');
+                const top = wrapper.querySelector('.tank-liquid-top');
+                const lbl = wrapper.querySelector('.fill-lbl');
+                
+                let newLevel = tank.level + (Math.random() * 6 - 3);
+                if(newLevel > 95) newLevel = 95;
+                if(newLevel < 10) newLevel = 10;
+                tank.level = newLevel;
+                
+                body.style.height = tank.level + '%';
+                top.style.bottom = `calc(${tank.level}% - ${ry/2}px)`;
+                lbl.innerText = tank.level.toFixed(1) + '%';
+            }, 3000 + Math.random() * 3000);
+        });
+
+        // Flow rate randomizer
+        setInterval(() => {
+            document.getElementById('flow-rate').innerText = (320 + Math.random() * 10).toFixed(1) + ' L/s';
+        }, 1500);
+
+        // Fun console lines
+        const consoleEl = document.getElementById('console-output');
+        const phrases = [
+            "> ADJUSTING VALVES...",
+            "> COMPRESSOR V-02 OPTIMAL",
+            "> PRESSURE STABILIZED",
+            "> RUNNING DIAGNOSTICS...",
+            "> RECALIBRATING METRICS",
+            "> FLOW RATE NOMINAL"
+        ];
+        setInterval(() => {
+            const arr = consoleEl.innerHTML.split('<br>').map(s => s.trim()).filter(s => s);
+            if(arr.length > 3) arr.shift();
+            arr.push(phrases[Math.floor(Math.random() * phrases.length)]);
+            consoleEl.innerHTML = arr.join('<br>') + '<br>';
+        }, 4000);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+# Publish only the live website. Everything is ignored unless listed below.
+/*
+!/.gitignore
+!/.htaccess
+!/*.html
+!/css/
+!/js/
+!/fonts/
+!/assets/
+!/3d/
+
+# never publish
+.DS_Store
+__MACOSX/
+Thumbs.db

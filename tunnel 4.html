@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Endless Tunnel & Space Animation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background-color: #000000; 
+            font-family: 'Inter', sans-serif;
+        }
+        canvas { 
+            display: block; 
+        }
+        #ui {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.6);
+            text-align: center;
+            font-size: 14px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            pointer-events: none;
+            transition: opacity 1.5s ease-out;
+        }
+        .scanlines {
+            position: absolute;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 10;
+        }
+        #logo-reveal {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 2.5s ease-in;
+        }
+        #logo-reveal.visible {
+            opacity: 1;
+        }
+        #logo-reveal img {
+            max-width: 45vw;
+            max-height: 45vh;
+            filter: drop-shadow(0 0 15px rgba(68, 170, 255, 0.4))
+                    drop-shadow(0 0 30px rgba(68, 136, 255, 0.2));
+            animation: logoFloat 4s ease-in-out infinite, logoPulse 4s ease-in-out infinite;
+            transform: scale(0.7);
+            transition: transform 2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        #logo-reveal.visible img {
+            transform: scale(1);
+        }
+        @keyframes logoFloat {
+            0%, 100% { transform: translateY(0px) scale(1); }
+            50% { transform: translateY(-12px) scale(1.02); }
+        }
+        @keyframes logoPulse {
+            0%, 100% { filter: drop-shadow(0 0 15px rgba(68,170,255,0.4)) drop-shadow(0 0 30px rgba(68,136,255,0.2)); }
+            50% { filter: drop-shadow(0 0 25px rgba(68,170,255,0.6)) drop-shadow(0 0 50px rgba(68,136,255,0.3)); }
+        }
+        /* ── Cinematic Text System ── */
+        #text-stage {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            z-index: 50;
+        }
+        .cin-text {
+            position: absolute;
+            font-family: 'Cairo', sans-serif;
+            font-weight: 900;
+            color: #ffffff;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            opacity: 0;
+            white-space: nowrap;
+            will-change: transform, opacity, filter;
+        }
+        /* Variant A — huge, tilted, blur-in from left */
+        .cin-text.style-a {
+            font-size: clamp(48px, 8vw, 100px);
+            transform: rotate(-12deg) translateX(-120vw) scale(1.4);
+            filter: blur(18px);
+            text-shadow: 0 0 40px rgba(68,170,255,0.7), 0 0 80px rgba(68,136,255,0.4);
+        }
+        .cin-text.style-a.active {
+            animation: cin-a-in 0.6s cubic-bezier(0.16,1,0.3,1) forwards,
+                       cin-a-out 0.5s ease-in 1.2s forwards;
+        }
+        @keyframes cin-a-in {
+            to { opacity: 1; transform: rotate(-5deg) translateX(0) scale(1); filter: blur(0px); }
+        }
+        @keyframes cin-a-out {
+            to { opacity: 0; transform: rotate(-5deg) translateX(60vw) scale(0.8); filter: blur(12px); }
+        }
+        /* Variant B — small, bottom-right, slide in sharp */
+        .cin-text.style-b {
+            font-size: clamp(14px, 1.8vw, 24px);
+            letter-spacing: 0.3em;
+            bottom: 18vh;
+            right: 8vw;
+            transform: translateX(80vw) rotate(2deg);
+            filter: blur(6px);
+            color: rgba(160,210,255,0.9);
+            text-shadow: 0 0 20px rgba(68,170,255,0.5);
+        }
+        .cin-text.style-b.active {
+            animation: cin-b-in 0.7s cubic-bezier(0.22,1,0.36,1) 0.15s forwards,
+                       cin-b-out 0.5s ease-in 1.4s forwards;
+        }
+        @keyframes cin-b-in {
+            to { opacity: 1; transform: translateX(0) rotate(0deg); filter: blur(0); }
+        }
+        @keyframes cin-b-out {
+            to { opacity: 0; transform: translateX(-30vw) rotate(-1deg); filter: blur(8px); }
+        }
+        /* Variant C — top-left, vertical tilt, scale blast */
+        .cin-text.style-c {
+            font-size: clamp(60px, 10vw, 130px);
+            top: 12vh;
+            left: 4vw;
+            transform: rotate(90deg) scale(0.1) translateY(-200%);
+            filter: blur(30px);
+            color: rgba(255,255,255,0.08);
+            text-shadow: 0 0 60px rgba(100,180,255,0.9);
+        }
+        .cin-text.style-c.active {
+            animation: cin-c-in 0.7s cubic-bezier(0.34,1.56,0.64,1) forwards,
+                       cin-c-out 0.5s ease-in 1.3s forwards;
+        }
+        @keyframes cin-c-in {
+            to { opacity: 1; color: rgba(255,255,255,0.12); transform: rotate(15deg) scale(1.1) translateY(0); filter: blur(0); }
+        }
+        @keyframes cin-c-out {
+            to { opacity: 0; transform: rotate(15deg) scale(1.5) translateY(10%); filter: blur(20px); }
+        }
+        /* Variant D — center, letter stagger mask wipe */
+        .cin-text.style-d {
+            font-size: clamp(30px, 4.5vw, 60px);
+            transform: scaleX(0.05) translateY(30px);
+            filter: blur(4px);
+            background: linear-gradient(90deg, #88bbff, #ffffff, #88bbff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .cin-text.style-d.active {
+            animation: cin-d-in 0.8s cubic-bezier(0.16,1,0.3,1) 0.05s forwards,
+                       cin-d-out 0.5s ease-in 1.3s forwards;
+        }
+        @keyframes cin-d-in {
+            to { opacity: 1; transform: scaleX(1) translateY(0); filter: blur(0); }
+        }
+        @keyframes cin-d-out {
+            to { opacity: 0; transform: scaleX(1) translateY(-40px); filter: blur(6px); }
+        }
+    </style>
+
+</head>
+<body>
+    <div class="scanlines"></div>
+    <div id="ui">Initiating Sequence...</div>
+    <div id="logo-reveal"><img src="./grey.png" alt="Grey Logo"></div>
+    <div id="text-stage">
+        <!-- Text A: after tunnel 1 exit into space -->
+        <div class="cin-text style-c" id="txt-c1">A New</div>
+        <div class="cin-text style-a" id="txt-a1">Perspective</div>
+        <div class="cin-text style-b" id="txt-b1">More Details</div>
+        <!-- Text B: after tunnel 2 exit into space -->
+        <div class="cin-text style-d" id="txt-d2">A New Perspective</div>
+        <div class="cin-text style-c" id="txt-c2">More</div>
+        <div class="cin-text style-b" id="txt-b2">Details →</div>
+    </div></div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script>
+        // 1. Core Setup
+        const scene = new THREE.Scene();
+        const fogColor = '#000000'; 
+        const wallColor = '#151515'; 
+        
+        scene.fog = new THREE.Fog(fogColor, 15, 90);
+        scene.background = new THREE.Color(fogColor);
+
+        // Extended camera draw distance to see the next tunnel far away
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 3000);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        renderer.physicallyCorrectLights = true;
+        document.body.appendChild(renderer.domElement);
+
+        // CubeCamera for real-time environment reflections (Interstellar glossy effect)
+        const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(256, {
+            format: THREE.RGBAFormat,
+            generateMipmaps: true,
+            minFilter: THREE.LinearMipmapLinearFilter
+        });
+        const cubeCamera = new THREE.CubeCamera(1, 3000, cubeRenderTarget);
+        scene.add(cubeCamera);
+
+        // Ambient light so the GLB model is visible in the dark space scene
+        const ambientLight = new THREE.AmbientLight(0x8888ff, 2.0);
+        scene.add(ambientLight);
+        
+        // Powerful directional lights specifically to create shiny reflections on the sphere
+        const dirLight1 = new THREE.DirectionalLight(0xffffff, 4.0);
+        dirLight1.position.set(100, 200, 100);
+        
+        const dirLight2 = new THREE.DirectionalLight(0x4488ff, 4.0);
+        dirLight2.position.set(-100, -200, -100);
+
+        // Attach lights to the camera so the shiny specular reflections are always perfectly aligned with the viewer
+        camera.add(dirLight1);
+        camera.add(dirLight2);
+        scene.add(camera);
+
+        // GLTFLoader for the blackhole model
+        const gltfLoader = new THREE.GLTFLoader();
+        const wormholeModels = [];
+        const loadedGLTFs = [];
+
+        // Post-Processing for True Cinematic Glow
+        const renderScene = new THREE.RenderPass(scene, camera);
+        const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        bloomPass.threshold = 0.3;  // Lower threshold so the wormhole glow gets picked up by bloom
+        bloomPass.strength = 2.5;   // Stronger bloom for dramatic black hole glow
+        bloomPass.radius = 0.8;     // Wider bloom spread
+
+        const composer = new THREE.EffectComposer(renderer);
+        composer.addPass(renderScene);
+        composer.addPass(bloomPass);
+
+        // 2. Endless Loop Track Configuration
+        const width = 20;
+        const height = 9;
+        const segmentLength = 12;
+        const numSegments = 50; 
+        const tunnelLength = numSegments * segmentLength; // 600 units inside tunnel
+        const spaceLength = 800; // 800 units flying through open space
+        const loopLength = tunnelLength + spaceLength; // 1400 units total loop track
+
+        // Wormhole spawn positions (filled after tunnels are built)
+        const wormholeSpawnPoints = [];
+
+        // HQ Floating LED Materials
+        const ledCoreMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const ledGlowMat = new THREE.MeshBasicMaterial({ 
+            color: 0x44aaff, // Bright cyan/blue glow
+            transparent: true, 
+            opacity: 0.8, 
+            blending: THREE.AdditiveBlending, 
+            depthWrite: false
+        });
+
+        // 4. Function to Build a Tunnel Segment
+        function createTunnel(offsetZ) {
+            const group = new THREE.Group();
+
+            // 4.5. Register wormhole spawn point (GLB is loaded async below)
+            wormholeSpawnPoints.push(new THREE.Vector3(0, 0, offsetZ + 30));
+
+            // HQ Floating LED Frames
+            const thickness = 0.3;
+            const ledGeoX = new THREE.BoxGeometry(width, thickness, thickness);
+            const ledGeoY = new THREE.BoxGeometry(thickness, height, thickness);
+
+            const glowGeoX = new THREE.BoxGeometry(width + 0.5, thickness * 4, thickness * 4);
+            const glowGeoY = new THREE.BoxGeometry(thickness * 4, height + 0.5, thickness * 4);
+
+            for (let z = 0; z >= -tunnelLength; z -= segmentLength) {
+                let actualZ = offsetZ + z;
+
+                // Top LED
+                const topLED = new THREE.Mesh(ledGeoX, ledCoreMat);
+                topLED.position.set(0, height / 2, actualZ);
+                const topGlow = new THREE.Mesh(glowGeoX, ledGlowMat);
+                topGlow.position.set(0, height / 2, actualZ);
+                group.add(topLED, topGlow);
+
+                // Bottom LED
+                const botLED = new THREE.Mesh(ledGeoX, ledCoreMat);
+                botLED.position.set(0, -height / 2, actualZ);
+                const botGlow = new THREE.Mesh(glowGeoX, ledGlowMat);
+                botGlow.position.set(0, -height / 2, actualZ);
+                group.add(botLED, botGlow);
+
+                // Left LED
+                const leftLED = new THREE.Mesh(ledGeoY, ledCoreMat);
+                leftLED.position.set(-width / 2, 0, actualZ);
+                const leftGlow = new THREE.Mesh(glowGeoY, ledGlowMat);
+                leftGlow.position.set(-width / 2, 0, actualZ);
+                group.add(leftLED, leftGlow);
+
+                // Right LED
+                const rightLED = new THREE.Mesh(ledGeoY, ledCoreMat);
+                rightLED.position.set(width / 2, 0, actualZ);
+                const rightGlow = new THREE.Mesh(glowGeoY, ledGlowMat);
+                rightGlow.position.set(width / 2, 0, actualZ);
+                group.add(rightLED, rightGlow);
+            }
+            scene.add(group);
+        }
+
+        // Build Tunnel 1 (The starting tunnel)
+        createTunnel(0);
+        // Build Tunnel 2 (The one we fly towards from space)
+        createTunnel(-loopLength);
+
+        // 5. Generate Tiled Outer Space (Starfield) for seamless looping
+        const starsGeo = new THREE.BufferGeometry();
+        const starsCount = 4000;
+        const posArray = new Float32Array(starsCount * 3);
+        
+        for(let i = 0; i < starsCount * 3; i+=3) {
+            posArray[i] = (Math.random() - 0.5) * 3000; 
+            posArray[i+1] = (Math.random() - 0.5) * 3000;
+            // Generate stars for exactly one loop block
+            posArray[i+2] = Math.random() * -loopLength; 
+        }
+        starsGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        
+        const starsMaterial = new THREE.PointsMaterial({
+            size: 2.0, color: '#ffffff', transparent: true, opacity: 0.9, fog: false
+        });
+        
+        // Clone the starfield across 3 blocks to prevent popping when the camera snaps back
+        const starMesh1 = new THREE.Points(starsGeo, starsMaterial);
+        starMesh1.position.z = 0;
+        scene.add(starMesh1);
+
+        const starMesh2 = new THREE.Points(starsGeo, starsMaterial);
+        starMesh2.position.z = -loopLength;
+        scene.add(starMesh2);
+
+        const starMesh3 = new THREE.Points(starsGeo, starsMaterial);
+        starMesh3.position.z = loopLength;
+        scene.add(starMesh3);
+
+        // Load the blackhole GLB and place one instance at each spawn point
+        wormholeSpawnPoints.forEach(spawnPos => {
+            // Add a placeholder wireframe sphere so we know exactly where it SHOULD be
+            const phGeo = new THREE.SphereGeometry(30, 16, 16);
+            const phMat = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true });
+            const placeholder = new THREE.Mesh(phGeo, phMat);
+            placeholder.position.copy(spawnPos);
+            scene.add(placeholder);
+            wormholeModels.push(placeholder); // Temporarily animate placeholder
+        });
+
+        gltfLoader.load('./blackhole_speareffect.glb', (gltf) => {
+            // Remove placeholders and clear array
+            wormholeModels.forEach(ph => scene.remove(ph));
+            wormholeModels.length = 0;
+
+            wormholeSpawnPoints.forEach(spawnPos => {
+                const group = new THREE.Group();
+                const model = gltf.scene.clone();
+
+                // Scale and center the group: The native GLB pivot is massively off-center!
+                const box = new THREE.Box3().setFromObject(model);
+                const center = box.getCenter(new THREE.Vector3());
+                
+                // Wrap in a pivot group to ensure it rotates perfectly around its visual center
+                const pivotGroup = new THREE.Group();
+                model.position.sub(center); 
+                pivotGroup.add(model);
+
+                const size = box.getSize(new THREE.Vector3());
+                const maxDim = Math.max(size.x, size.y, size.z);
+                if(maxDim > 0) {
+                    pivotGroup.scale.setScalar(60 / maxDim);
+                } else {
+                    pivotGroup.scale.setScalar(10); // Fallback
+                }
+
+                group.add(pivotGroup);
+                group.position.copy(spawnPos);
+                
+                // Tilt the sphere so its 3D depth is visible as you approach it head-on
+                pivotGroup.rotation.x = 0.5;  // ~30° tilt to show 3D volume
+                pivotGroup.rotation.z = 0.3;  // Slight Z tilt for cinematic asymmetry
+                
+                // Make the model glow intensely like a black hole
+                model.traverse(child => {
+                    if (child.isMesh) {
+                        child.material = new THREE.MeshBasicMaterial({
+                            color: new THREE.Color(0x4488ff),
+                            transparent: true,
+                            opacity: 0.95,
+                            blending: THREE.AdditiveBlending,
+                            depthWrite: false
+                        });
+                    }
+                });
+
+                // Inner glow shell — bright core halo
+                const innerGlowGeo = new THREE.SphereGeometry(32, 32, 32);
+                const innerGlowMat = new THREE.ShaderMaterial({
+                    uniforms: { time: { value: 0 } },
+                    vertexShader: `
+                        varying vec3 vNormal;
+                        varying vec3 vViewDir;
+                        void main() {
+                            vNormal = normalize(normalMatrix * normal);
+                            vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
+                            vViewDir = normalize(-mvPos.xyz);
+                            gl_Position = projectionMatrix * mvPos;
+                        }
+                    `,
+                    fragmentShader: `
+                        uniform float time;
+                        varying vec3 vNormal;
+                        varying vec3 vViewDir;
+                        void main() {
+                            float fresnel = pow(1.0 - abs(dot(vNormal, vViewDir)), 2.0);
+                            float pulse = 0.8 + 0.2 * sin(time * 1.5);
+                            vec3 col = mix(vec3(0.2, 0.5, 1.0), vec3(0.8, 0.9, 1.0), fresnel);
+                            col *= pulse * 3.0;
+                            gl_FragColor = vec4(col, fresnel * 0.8);
+                        }
+                    `,
+                    transparent: true,
+                    blending: THREE.AdditiveBlending,
+                    depthWrite: false,
+                    side: THREE.FrontSide,
+                    fog: false
+                });
+                const innerGlow = new THREE.Mesh(innerGlowGeo, innerGlowMat);
+                innerGlow.position.copy(spawnPos);
+                scene.add(innerGlow);
+
+                // Outer halo — massive soft atmospheric glow
+                const outerGlowGeo = new THREE.SphereGeometry(55, 32, 32);
+                const outerGlowMat = new THREE.ShaderMaterial({
+                    uniforms: { time: { value: 0 } },
+                    vertexShader: `
+                        varying vec3 vNormal;
+                        varying vec3 vViewDir;
+                        void main() {
+                            vNormal = normalize(normalMatrix * normal);
+                            vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
+                            vViewDir = normalize(-mvPos.xyz);
+                            gl_Position = projectionMatrix * mvPos;
+                        }
+                    `,
+                    fragmentShader: `
+                        uniform float time;
+                        varying vec3 vNormal;
+                        varying vec3 vViewDir;
+                        void main() {
+                            float rim = 1.0 - abs(dot(vNormal, vViewDir));
+                            rim = pow(rim, 5.0);
+                            float pulse = 0.85 + 0.15 * sin(time * 0.8 + 1.0);
+                            vec3 col = vec3(0.15, 0.3, 1.0) * rim * pulse * 2.0;
+                            gl_FragColor = vec4(col, rim * 0.4);
+                        }
+                    `,
+                    transparent: true,
+                    blending: THREE.AdditiveBlending,
+                    depthWrite: false,
+                    side: THREE.BackSide,
+                    fog: false
+                });
+                const outerGlow = new THREE.Mesh(outerGlowGeo, outerGlowMat);
+                outerGlow.position.copy(spawnPos);
+                scene.add(outerGlow);
+
+                // Store glow references for animation
+                group.userData.innerGlow = innerGlow;
+                group.userData.outerGlow = outerGlow;
+                
+                scene.add(group);
+                loadedGLTFs.push(group);
+            });
+        }, undefined, (err) => {
+            console.error('GLB load error:', err);
+            const ui = document.getElementById('ui');
+            ui.innerText = "ERROR LOADING GLB! Make sure you run a local server (Live Server).";
+            ui.style.opacity = '1';
+            ui.style.color = '#ff4444';
+        });
+
+        // Initial Camera State
+        camera.position.set(0, -1.5, 80);
+
+        // 6. Kinematic Animation Loop
+        let velocity = 0.1;
+        let targetVelocity = 0.1;
+        let loopCount = 0;
+        let logoRevealed = false;
+        let finalSequence = false;
+        let finalTimer = 0;
+
+        // ── Cinematic Text Trigger System ──
+        let textPhase1Fired = false; // after exiting tunnel 1
+        let textPhase2Fired = false; // after exiting tunnel 2
+
+        function fireTextGroup(ids, staggerMs) {
+            ids.forEach((id, i) => {
+                setTimeout(() => {
+                    const el = document.getElementById(id);
+                    if (!el) return;
+                    el.classList.remove('active');
+                    void el.offsetWidth; // force reflow to reset animation
+                    el.classList.add('active');
+                }, i * staggerMs);
+            });
+        }
+
+        setTimeout(() => {
+            isAccelerating = true;
+            // Only hide UI if there isn't an error
+            if (!document.getElementById('ui').innerText.includes("ERROR")) {
+                document.getElementById('ui').style.opacity = '0';
+            }
+        }, 1500);
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            camera.position.z -= velocity;
+
+            // ── Fire text groups at precise spatial triggers ──
+            // Right after exiting tunnel 1 into space
+            if (!textPhase1Fired && loopCount === 0 && camera.position.z < -610) {
+                textPhase1Fired = true;
+                fireTextGroup(['txt-c1', 'txt-a1', 'txt-b1'], 250);
+            }
+            // Right after exiting tunnel 2 into space on second loop
+            if (!textPhase2Fired && loopCount === 1 && camera.position.z < -610) {
+                textPhase2Fired = true;
+                fireTextGroup(['txt-d2', 'txt-c2', 'txt-b2'], 250);
+            }
+
+            // Spin the 3D wormhole sphere — rotate on multiple axes so it clearly reads as a sphere
+            const time = performance.now() * 0.001;
+            loadedGLTFs.forEach(group => {
+                if (group.children[0]) {
+                    group.children[0].rotation.y -= 0.008;
+                    group.children[0].rotation.x -= 0.003;
+                }
+                // Animate glow pulses
+                if (group.userData.innerGlow) {
+                    group.userData.innerGlow.material.uniforms.time.value = time;
+                }
+                if (group.userData.outerGlow) {
+                    group.userData.outerGlow.material.uniforms.time.value = time;
+                }
+            });
+
+            // Update the live reflections for the glossy material
+            if (loadedGLTFs.length > 0 && !finalSequence) {
+                // Hide models so they don't reflect themselves in the mirror
+                loadedGLTFs.forEach(m => m.visible = false);
+                
+                // Position reflection camera at the wormhole we are currently approaching
+                const closestWormhole = (camera.position.z < -tunnelLength) 
+                    ? wormholeSpawnPoints[1] 
+                    : wormholeSpawnPoints[0];
+                
+                cubeCamera.position.copy(closestWormhole);
+                cubeCamera.update(renderer, scene);
+                
+                // Show models again
+                loadedGLTFs.forEach(m => m.visible = true);
+            } else if (finalSequence) {
+                // Completely hide the wormholes and their glows during the logo reveal in deep space
+                loadedGLTFs.forEach(group => {
+                    group.visible = false;
+                    if (group.userData.innerGlow) group.userData.innerGlow.visible = false;
+                    if (group.userData.outerGlow) group.userData.outerGlow.visible = false;
+                });
+            }
+
+            // Cinematic Speed Control
+            if (!finalSequence) {
+                if (camera.position.z >= 55) {
+                    targetVelocity = 0.5;
+                } else if (camera.position.z < 55 && camera.position.z > 30) {
+                    targetVelocity = 8;
+                } else if (camera.position.z <= 30 && camera.position.z > -tunnelLength) {
+                    targetVelocity = 3;
+                } else if (camera.position.z <= -tunnelLength && camera.position.z > -1350) {
+                    targetVelocity = 6;
+                } else if (camera.position.z <= -1350) {
+                    targetVelocity = 8;
+                }
+            }
+
+            // Smoothly interpolate velocity for realistic camera physics
+            velocity += (targetVelocity - velocity) * 0.03;
+            // Endless Loop Magic: When arriving at Tunnel 2, invisibly snap back to Tunnel 1
+            if (camera.position.z <= -loopLength && !finalSequence) {
+                loopCount++;
+                camera.position.z += loopLength;
+            }
+
+            // After 2 tunnel passes, trigger the final logo reveal perfectly in the middle of deep space
+            if (loopCount >= 1 && camera.position.z <= -1000 && !logoRevealed) {
+                // Begin the final sequence in open space
+                finalSequence = true;
+                targetVelocity = 0;
+                logoRevealed = true;
+                finalTimer = 0;
+
+                // Create a burst of luminous particles around the camera
+                const burstGeo = new THREE.BufferGeometry();
+                const burstCount = 2000;
+                const burstPos = new Float32Array(burstCount * 3);
+                const burstVel = [];
+                for (let i = 0; i < burstCount * 3; i += 3) {
+                    const theta = Math.random() * Math.PI * 2;
+                    const phi = Math.acos(2 * Math.random() - 1);
+                    const r = 2 + Math.random() * 3;
+                    burstPos[i]     = camera.position.x + Math.sin(phi) * Math.cos(theta) * r;
+                    burstPos[i + 1] = camera.position.y + Math.sin(phi) * Math.sin(theta) * r;
+                    burstPos[i + 2] = camera.position.z + Math.cos(phi) * r;
+                    burstVel.push(
+                        Math.sin(phi) * Math.cos(theta) * (0.3 + Math.random() * 0.5),
+                        Math.sin(phi) * Math.sin(theta) * (0.3 + Math.random() * 0.5),
+                        Math.cos(phi) * (0.3 + Math.random() * 0.5)
+                    );
+                }
+                burstGeo.setAttribute('position', new THREE.BufferAttribute(burstPos, 3));
+                const burstMat = new THREE.PointsMaterial({
+                    size: 2.5, color: 0x88bbff, transparent: true, opacity: 1.0,
+                    blending: THREE.AdditiveBlending, depthWrite: false, fog: false
+                });
+                const burstMesh = new THREE.Points(burstGeo, burstMat);
+                scene.add(burstMesh);
+                window._burstMesh = burstMesh;
+                window._burstVel = burstVel;
+
+                // Trigger the HTML logo reveal after a brief dramatic pause
+                setTimeout(() => {
+                    document.getElementById('logo-reveal').classList.add('visible');
+                }, 1200);
+            }
+
+            // Animate the final particle burst expansion
+            if (finalSequence && window._burstMesh) {
+                finalTimer++;
+                const positions = window._burstMesh.geometry.attributes.position.array;
+                const vel = window._burstVel;
+                for (let i = 0; i < positions.length; i += 3) {
+                    const vi = i;
+                    positions[vi]     += vel[vi] * 0.4;
+                    positions[vi + 1] += vel[vi + 1] * 0.4;
+                    positions[vi + 2] += vel[vi + 2] * 0.4;
+                }
+                window._burstMesh.geometry.attributes.position.needsUpdate = true;
+                window._burstMesh.material.opacity = Math.max(0, 1.0 - finalTimer / 180);
+
+                // Slowly increase bloom for a heavenly glow effect, but don't wash it out
+                bloomPass.strength = Math.min(3.0, 2.5 + finalTimer * 0.015);
+            }
+
+            const isInsideTunnel = camera.position.z > -tunnelLength;
+
+            if (isInsideTunnel) {
+                // Return to ground level and shake
+                camera.position.y += (-1.5 - camera.position.y) * 0.05;
+                if (velocity > 1.2) {
+                    camera.position.x = (Math.random() - 0.5) * (velocity - 1.2) * 0.06;
+                    camera.position.y += (Math.random() - 0.5) * (velocity - 1.2) * 0.06;
+                }
+                maxVelocity = 2.5; 
+            } else {
+                // Smoothly float to absolute center in zero-G
+                camera.position.x += (0 - camera.position.x) * 0.02;
+                camera.position.y += (0 - camera.position.y) * 0.02;
+                // Engage warp speed in open space
+                maxVelocity = 5.0; 
+            }
+
+            composer.render();
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>

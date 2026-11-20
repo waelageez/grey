@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  body { background: #111; color: white; margin: 0; font-family: sans-serif; display: flex;}
+  #workspace {
+    position: relative;
+    width: 1536px;
+    height: 1024px;
+    border: 1px solid #444;
+    transform: scale(0.6);
+    transform-origin: top left;
+    margin: 20px;
+  }
+  .target {
+    position: absolute; top:0; left:0; width:100%; height:100%;
+    opacity: 0.3; pointer-events: none;
+  }
+  .piece { position: absolute; opacity: 0.8; mix-blend-mode: screen; border: 1px dashed rgba(255,0,0,0.3); }
+  #controls { padding: 20px; background: #222; max-height: 100vh; overflow-y: auto; width: 300px;}
+  .control-group { margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px;}
+  input[type=range] { width: 100%; }
+</style>
+</head>
+<body>
+  <div id="controls"></div>
+  <div id="workspace">
+    <img src="assets/logo/actual logo.png" class="target">
+  </div>
+  <script>
+    const pieces = [
+      {id: "g", src: "g.png", x: 129, y: 317},
+      {id: "r", src: "r.png", x: 311, y: 312},
+      {id: "eup", src: "e.up.png", x: 673, y: 313},
+      {id: "emid", src: "e.middle.png", x: 672, y: 468},
+      {id: "ebot", src: "e.bottom.png", x: 0, y: 316},
+      {id: "y", src: "y.png", x: 961, y: 273}
+    ];
+
+    const ws = document.getElementById('workspace');
+    const ct = document.getElementById('controls');
+
+    pieces.forEach(p => {
+      // Create img
+      const img = document.createElement('img');
+      img.src = "assets/logo/" + p.src;
+      img.className = "piece";
+      img.id = "img-" + p.id;
+      img.style.left = p.x + "px";
+      img.style.top = p.y + "px";
+      ws.appendChild(img);
+
+      // Create controls
+      const cg = document.createElement('div');
+      cg.className = "control-group";
+      cg.innerHTML = `
+        <label>${p.id}</label><br>
+        X: <input type="number" id="x-${p.id}" value="${p.x}"><br>
+        Y: <input type="number" id="y-${p.id}" value="${p.y}"><br>
+      `;
+      ct.appendChild(cg);
+
+      document.getElementById("x-"+p.id).addEventListener('input', (e) => {
+        img.style.left = e.target.value + "px";
+        dump();
+      });
+      document.getElementById("y-"+p.id).addEventListener('input', (e) => {
+        img.style.top = e.target.value + "px";
+        dump();
+      });
+    });
+
+    const dumpDiv = document.createElement('pre');
+    ct.appendChild(dumpDiv);
+
+    function dump() {
+      const res = {};
+      pieces.forEach(p => {
+        res[p.id] = {
+           x: parseInt(document.getElementById("x-"+p.id).value),
+           y: parseInt(document.getElementById("y-"+p.id).value)
+        };
+      });
+      dumpDiv.innerText = JSON.stringify(res, null, 2);
+    }
+    dump();
+  </script>
+</body>
+</html>

@@ -1,0 +1,345 @@
+/* ── Cinematic Text Overlay ── */
+#text-stage {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100vh;
+    pointer-events: none; z-index: 50;
+    overflow: hidden;
+}
+.cin-text {
+    position: absolute; font-family: 'Cairo', sans-serif; font-weight: 900;
+    color: #fff; text-transform: uppercase; opacity: 0;
+    will-change: transform, opacity, filter; white-space: nowrap;
+}
+/* A — huge scale-blast from center */
+.cin-text.sa {
+    font-size: clamp(50px,9vw,120px); letter-spacing: .15em;
+    top: 50%; left: 50%; transform: translate(-50%,-50%) scale(0); filter: blur(20px);
+    text-shadow: 0 0 60px rgba(120,180,255,.8);
+}
+.cin-text.sa.active {
+    animation: sa-in .7s cubic-bezier(.16,1,.3,1) forwards, sa-out .5s ease-in 1.4s forwards;
+}
+@keyframes sa-in { to { opacity:1; transform:translate(-50%,-50%) scale(1); filter:blur(0); } }
+@keyframes sa-out { to { opacity:0; transform:translate(-50%,-50%) scale(1.3); filter:blur(15px); } }
+
+/* B — subtitle slide-up */
+.cin-text.sb {
+    font-size: clamp(14px,2vw,26px); letter-spacing: .35em;
+    bottom: 20vh; left: 50%; transform: translateX(-50%) translateY(50px); filter: blur(6px);
+    color: rgba(160,210,255,.9);
+}
+.cin-text.sb.active {
+    animation: sb-in .6s cubic-bezier(.22,1,.36,1) .25s forwards, sb-out .4s ease-in 1.5s forwards;
+}
+@keyframes sb-in { to { opacity:.9; transform:translateX(-50%) translateY(0); filter:blur(0); } }
+@keyframes sb-in-m { from { opacity:0; transform:translateX(-50%) translateY(30px); filter:blur(6px); } to { opacity:.9; transform:translateX(-50%) translateY(0); filter:blur(0); } }
+@keyframes sb-out { to { opacity:0; transform:translateX(-50%) translateY(-30px); filter:blur(8px); } }
+
+/* C — ghost watermark */
+.cin-text.sc {
+    font-size: clamp(80px,16vw,220px);
+    top: 50%; left: 50%; transform: translate(-50%,-50%) scale(.2) rotate(-12deg); filter: blur(30px);
+    color: rgba(255,255,255,.03); text-shadow: 0 0 80px rgba(80,140,255,.5);
+}
+.cin-text.sc.active {
+    animation: sc-in .9s cubic-bezier(.34,1.56,.64,1) forwards, sc-out .6s ease-in 1.2s forwards;
+}
+@keyframes sc-in { to { opacity:1; color:rgba(255,255,255,.06); transform:translate(-50%,-50%) scale(1) rotate(-3deg); filter:blur(0); } }
+@keyframes sc-out { to { opacity:0; transform:translate(-50%,-50%) scale(1.5) rotate(-3deg); filter:blur(25px); } }
+
+/* ═══ EMERGENCE REVEAL ═══ */
+#logo-reveal {
+    position:absolute; top:0; left:0; width:100%; height:100vh;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    z-index:80; pointer-events:none;
+    overflow: hidden;
+}
+
+/* Giant watermark behind everything */
+.bg-word {
+    position:absolute; top:50%; left:50%;
+    transform: translate(-50%,-50%) scale(.85);
+    font-family:'Cairo',sans-serif; font-weight:900;
+    font-size: clamp(70px, 22vw, 300px);
+    text-transform:uppercase; white-space:nowrap;
+    color: transparent; letter-spacing:.1em;
+    -webkit-text-stroke: 1px rgba(60,120,255,0);
+    pointer-events:none; z-index:1;
+    opacity:0;
+    transition: opacity 4s ease-out, transform 6s ease-out, -webkit-text-stroke 4s ease-out;
+}
+.bg-word.show {
+    opacity:1;
+    transform: translate(-50%,-50%) scale(1);
+    -webkit-text-stroke: 1px rgba(60,120,255,.07);
+}
+
+/* ── Logo Assembly Container ── */
+#logo-assembly-container {
+    position: relative;
+    width: clamp(260px, 34vw, 620px);
+    aspect-ratio: 3 / 2;
+    height: auto;
+    z-index: 3;
+    opacity: 0;
+    transform: translateY(30px) scale(.88);
+    transform-style: preserve-3d;
+    perspective: 1600px;   /* wider FOV for the zoom-out implosion */
+    filter: saturate(.8) brightness(.7);
+    transition:
+        opacity .45s ease-out,
+        transform .85s cubic-bezier(.16,1,.3,1),
+        filter 1.8s ease-out;
+}
+#logo-assembly-container.show {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: saturate(1.15) brightness(1);
+}
+#logo-assembly-container.idle {
+    animation: idleFloat 7s ease-in-out infinite;
+}
+@keyframes idleFloat {
+    0%,100% { transform: translateY(0) rotateX(0deg) scale(1); }
+    50%      { transform: translateY(-6px) rotateX(1.5deg) scale(1.006); }
+}
+
+/* ── Individual Logo Pieces ── */
+.logo-piece {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    object-fit: contain;
+    transform-style: preserve-3d;
+    transform-origin: var(--origin, 50% 50%);
+    filter: none;
+    will-change: transform, opacity, filter;
+}
+
+/*
+ * Implosion from Screen — all pieces start oversized (3x) and close to the camera,
+ * then recede and lock into the logo. Tight stagger (0–0.32 s) makes them land
+ * as a single wave rather than a staggered parade.
+ * G and Y mirror each other; R and E-pieces form a slight vertical fan.
+ * E-mid comes straight out from depth (pure-Z).
+ */
+.piece-g {
+    --delay: .00s; --origin: 18% 50%;
+    --from: translate3d(-6vw,  1vh, 240px) rotateX( 3deg) rotateY(-5deg) scale(3.1);
+    transform: var(--from);
+}
+.piece-r {
+    --delay: .06s; --origin: 35% 48%;
+    --from: translate3d(-2vw, -2vh, 280px) rotateX(-2deg) rotateY(-4deg) scale(3.1);
+    transform: var(--from);
+}
+.piece-e-up {
+    --delay: .12s; --origin: 60% 34%;
+    --from: translate3d( 2vw, -4vh, 260px) rotateX( 4deg) rotateY( 4deg) scale(3.1);
+    transform: var(--from);
+}
+.piece-e-mid {
+    --delay: .18s; --origin: 58% 50%;
+    --from: translate3d( 2vw,  1vh, 320px) rotateX( 1deg) rotateY( 6deg) scale(2.7);
+    transform: var(--from);
+}
+.piece-e-bot {
+    --delay: .24s; --origin: 48% 68%;
+    --from: translate3d( 0vw,  4vh, 260px) rotateX(-3deg) rotateY( 3deg) scale(3.1);
+    transform: var(--from);
+}
+.piece-y {
+    --delay: .32s; --origin: 82% 45%;
+    --from: translate3d( 7vw,  1vh, 240px) rotateX(-2deg) rotateY( 6deg) scale(3.1);
+    transform: var(--from);
+}
+
+/* Assembly triggered via .show on parent */
+#logo-assembly-container.show .actual-logo {
+    transform: translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(1);
+    filter:
+        blur(0)
+        drop-shadow(0 0 8px rgba(255,255,255,.22))
+        drop-shadow(0 0 24px rgba(120,185,255,.2));
+}
+
+/* Special timing for actual logo (crossfade after assembly) */
+.actual-logo {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    object-fit: contain;
+    display: none;
+    opacity: 0 !important;
+    filter:
+        drop-shadow(0 0 16px rgba(255,255,255,.24))
+        drop-shadow(0 0 44px rgba(105,165,255,.28)) !important;
+    transition: opacity 1.1s ease-in, filter 1.5s ease-out !important;
+    transition-delay: 4.05s !important; /* Wait for pieces to lock. */
+}
+#logo-assembly-container.show .actual-logo {
+    opacity: 0 !important;
+}
+
+/* The final logo is the assembled six pieces themselves. */
+#logo-assembly-container.show .logo-piece:not(.actual-logo) {
+    animation: pieceFly 2.1s cubic-bezier(.2,1,.3,1) var(--delay, 0s) forwards;
+}
+
+#logo-assembly-container::before,
+#logo-assembly-container::after {
+    content: "";
+    position: absolute;
+    inset: 31% -8% 27%;
+    z-index: 4;
+    pointer-events: none;
+    opacity: 0;
+}
+
+#logo-assembly-container::before {
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.86), transparent);
+    transform: translateX(-115%) skewX(-18deg);
+}
+
+#logo-assembly-container::after {
+    background: radial-gradient(ellipse at center, rgba(135,190,255,.42), transparent 62%);
+    transform: scale(.55);
+    filter: blur(18px);
+}
+
+#logo-assembly-container.show::before {
+    animation: logoScan 1.1s cubic-bezier(.2,.75,.2,1) 2.65s both;
+}
+
+/* logoPulse removed — no glow on assembly */
+
+@keyframes logoScan {
+    0% { opacity: 0; transform: translateX(-115%) skewX(-18deg); }
+    20%, 58% { opacity: .9; }
+    100% { opacity: 0; transform: translateX(115%) skewX(-18deg); }
+}
+
+@keyframes logoPulse {
+    0% { opacity: 0; transform: scale(.55); }
+    35% { opacity: 1; transform: scale(1.02); }
+    100% { opacity: 0; transform: scale(1.3); }
+}
+
+@keyframes pieceFly {
+    0% {
+        opacity: 0;
+        transform: var(--from);
+        filter: blur(20px) brightness(2.6);
+    }
+    8% {
+        opacity: 1;
+        filter: blur(13px) brightness(1.8);
+    }
+    32% {
+        filter: blur(4px) brightness(1.15);
+    }
+    78% {
+        transform: translate3d(0, 0, 8px) scale(1.012);
+        filter: blur(0.3px) brightness(1.02);
+    }
+    100% {
+        opacity: 1;
+        transform: translate3d(0, 0, 0) scale(1);
+        filter: none;
+    }
+}
+
+@keyframes pieceDissolve {
+    from { opacity: 1; filter: blur(0) drop-shadow(0 0 8px rgba(255,255,255,.22)) drop-shadow(0 0 24px rgba(120,185,255,.2)); }
+    to { opacity: 0; filter: blur(3px) drop-shadow(0 0 16px rgba(255,255,255,.1)) drop-shadow(0 0 34px rgba(120,185,255,.14)); }
+}
+
+/* Horizontal gradient line */
+.reveal-line {
+    width:0; height:1px; z-index:4;
+    background: linear-gradient(90deg, transparent, rgba(100,170,255,.5), transparent);
+    margin: 12px 0 8px;
+    transition: width 1.8s cubic-bezier(.16,1,.3,1);
+}
+.reveal-line.show { width: min(45vw, 360px); }
+
+/* Two-phrase tagline */
+.reveal-phrase {
+    font-family:'Cairo',sans-serif; font-weight:700;
+    text-transform:uppercase; letter-spacing:.3em;
+    text-align:center; z-index:4;
+    opacity:0; transform:translateY(12px);
+    transition: opacity 1.2s ease-out, transform 1.2s cubic-bezier(.16,1,.3,1);
+}
+.reveal-phrase.show { opacity:1; transform:translateY(0); }
+.phrase-top {
+    font-size: clamp(11px, 1.3vw, 17px);
+    color: rgba(255,255,255,.45);
+}
+.phrase-bot {
+    font-size: clamp(13px, 1.6vw, 21px);
+    color: rgba(160,210,255,.85);
+    margin-top: 4px;
+}
+.phrase-bot .accent { color: rgba(100,180,255,1); }
+
+/* CTA Row Reveal */
+.reveal-cta-row {
+    margin-top: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    z-index: 5;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 1.2s ease-out, transform 1.2s cubic-bezier(.16,1,.3,1);
+    pointer-events: auto; /* CTAs must be clickable */
+}
+.reveal-cta-row.show {
+    opacity: 1; transform: translateY(0);
+}
+
+/* Main Navigation — always visible, even during the tunnel intro */
+#main-nav {
+    opacity: 1;
+    pointer-events: auto;
+    transition: opacity 1.5s ease;
+}
+#main-nav.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* ═══ MOBILE RESPONSIVE ═══ */
+@media (max-width: 768px) {
+    #logo-assembly-container { width: min(74vw, 420px); }
+    .bg-word { font-size: clamp(50px, 25vw, 130px) !important; }
+    .reveal-line { margin: 10px 0 8px; }
+    .reveal-cta-row { margin-top: 0.5rem; gap: 0.75rem; flex-wrap: wrap; padding: 0 1rem; }
+    .phrase-top { font-size: clamp(8px, 2.5vw, 13px) !important; letter-spacing:.2em !important; }
+    .phrase-bot { font-size: clamp(10px, 3vw, 15px) !important; letter-spacing:.2em !important; }
+    /* Main headline pair — big enough to read, tight enough to read as a unit */
+    .cin-text.sa {
+        font-size: clamp(32px, 11vw, 60px) !important;
+    }
+    /* "Perspective" / "جديدة" — sit just below "A New" / "رؤية" */
+    #t-a2 { margin-top: 5vh !important; }
+
+    /* Subtitle ("More Details" / "The Horizon") —
+       larger font, pulled up near the headline instead of sitting at the screen bottom */
+    .cin-text.sb {
+        font-size: clamp(15px, 4.2vw, 20px) !important;
+        letter-spacing: .22em !important;
+        top: calc(50% + 11vh) !important;
+        bottom: auto !important;
+        /* reset the desktop translateY so the slide-up animation still works */
+        transform: translateX(-50%) translateY(30px) !important;
+    }
+    .cin-text.sb.active {
+        animation: sb-in-m .55s cubic-bezier(.22,1,.36,1) .25s forwards,
+                   sb-out  .4s ease-in 1.5s forwards !important;
+    }
+    .cin-text.sc { font-size: clamp(40px, 20vw, 100px) !important; }
+}

@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Endless Tunnel & Space Animation</title>
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background-color: #000000; 
+            font-family: 'Inter', sans-serif;
+        }
+        canvas { 
+            display: block; 
+        }
+        #ui {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.6);
+            text-align: center;
+            font-size: 14px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            pointer-events: none;
+            transition: opacity 1.5s ease-out;
+        }
+        .scanlines {
+            position: absolute;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div class="scanlines"></div>
+    <div id="ui">Initiating Sequence...</div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+    <script>
+        // 1. Core Setup
+        const scene = new THREE.Scene();
+        const fogColor = '#000000'; 
+        const wallColor = '#151515'; 
+        
+        scene.fog = new THREE.Fog(fogColor, 15, 90);
+        scene.background = new THREE.Color(fogColor);
+
+        // Extended camera draw distance to see the next tunnel far away
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 3000);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        renderer.physicallyCorrectLights = true;
+        document.body.appendChild(renderer.domElement);
+
+        // CubeCamera for real-time environment capture (glossy sphere reflection)
+        const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(256, {
+            format: THREE.RGBAFormat,
+            generateMipmaps: true,
+            minFilter: THREE.LinearMipmapLinearFilter
+        });
+        const cubeCamera = new THREE.CubeCamera(1, 3000, cubeRenderTarget);
+        scene.add(cubeCamera);
+
+        // Post-Processing for True Cinematic Glow
+        const renderScene = new THREE.RenderPass(scene, camera);
+        const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        bloomPass.threshold = 0.8; 
+        bloomPass.strength = 2.0; 
+        bloomPass.radius = 0.6; 
+
+        const composer = new THREE.EffectComposer(renderer);
+        composer.addPass(renderScene);
+        composer.addPass(bloomPass);
+
+        // 2. Endless Loop Track Configuration
+        const width = 20;
+        const height = 9;
+        const segmentLength = 12;
+        const numSegments = 50; 
+        const tunnelLength = numSegments * segmentLength; // 600 units inside tunnel
+        const spaceLength = 800; // 800 units flying through open space
+        const loopLength = tunnelLength + spaceLength; // 1400 units total loop track
+
+        const wormholeSpheres = [];
+
+        // Materials
+        const materialDark = new THREE.MeshBasicMaterial({ color: wallColor });
+        const materialLight = new THREE.MeshBasicMaterial({ color: '#ffffff' });
+        const materialGlow = new THREE.MeshBasicMaterial({ 
+            color: '#ffffff', transparent: true, opacity: 0.6, 
+            blending: THREE.AdditiveBlending, depthWrite: false 
+        });
+
+        // 3. Dynamic Floor Texture Generation
+        const floorCanvas = document.createElement('canvas');
+        floorCanvas.width = 1024;
+        floorCanvas.height = 512;
+        const ctx = floorCanvas.getContext('2d');
+        
+        ctx.fillStyle = '#42444a';
+        ctx.fillRect(0, 0, 1024, 512);
+
+        for(let i=0; i<30000; i++) {
+            ctx.fillStyle = Math.random() > 0.5 ? '#3b3d42' : '#494c53';
+            ctx.fillRect(Math.random()*1024, Math.random()*512, 2, 2);
+        }
+
+        ctx.strokeStyle = '#4f5259';
+        ctx.lineWidth = 2;
+        for(let i=0; i<=1024; i+=102.4) {
+            ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 512); ctx.stroke();
+        }
+        for(let j=0; j<=512; j+=51.2) {
+            ctx.beginPath(); ctx.moveTo(0, j); ctx.lineTo(1024, j); ctx.stroke();
+        }
+
+        ctx.strokeStyle = '#25272b';
+        ctx.lineWidth = 8;
+        ctx.beginPath(); ctx.moveTo(512, 0); ctx.lineTo(512, 512); ctx.stroke();
+        
+        ctx.strokeStyle = '#323439';
+        ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.moveTo(480, 0); ctx.lineTo(480, 512); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(544, 0); ctx.lineTo(544, 512); ctx.stroke();
+
+        const floorTexture = new THREE.CanvasTexture(floorCanvas);
+        floorTexture.wrapS = THREE.ClampToEdgeWrapping;
+        floorTexture.wrapT = THREE.RepeatWrapping;
+        floorTexture.repeat.set(1, numSegments);
+        floorTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+
+        // 4. Function to Build a Tunnel Segment
+        function createTunnel(offsetZ) {
+            const group = new THREE.Group();
+
+            // Inner Architecture
+            const floorGeo = new THREE.PlaneGeometry(width, tunnelLength);
+            const floor = new THREE.Mesh(floorGeo, new THREE.MeshBasicMaterial({ map: floorTexture }));
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.y = -height / 2;
+            floor.position.z = offsetZ - tunnelLength / 2;
+            group.add(floor);
+
+            const ceilGeo = new THREE.PlaneGeometry(width, tunnelLength);
+            const ceil = new THREE.Mesh(ceilGeo, materialDark);
+            ceil.rotation.x = Math.PI / 2;
+            ceil.position.y = height / 2;
+            ceil.position.z = offsetZ - tunnelLength / 2;
+            group.add(ceil);
+
+            const wallGeo = new THREE.PlaneGeometry(tunnelLength, height);
+            const leftWall = new THREE.Mesh(wallGeo, materialDark);
+            leftWall.rotation.y = Math.PI / 2;
+            leftWall.position.x = -width / 2;
+            leftWall.position.z = offsetZ - tunnelLength / 2;
+            group.add(leftWall);
+
+            const rightWall = new THREE.Mesh(wallGeo, materialDark);
+            rightWall.rotation.y = -Math.PI / 2;
+            rightWall.position.x = width / 2;
+            rightWall.position.z = offsetZ - tunnelLength / 2;
+            group.add(rightWall);
+
+            // Exterior Frames (So it looks like a massive monolith from space)
+            function createFrame(zPos) {
+                const frameThickness = 40; // Massive external walls
+                const frameColor = new THREE.MeshBasicMaterial({ color: '#050505' }); // Pitch black exterior
+                
+                const topFrame = new THREE.Mesh(new THREE.PlaneGeometry(width + frameThickness*2, frameThickness), frameColor);
+                topFrame.position.set(0, height/2 + frameThickness/2, zPos);
+                group.add(topFrame);
+                
+                const botFrame = new THREE.Mesh(new THREE.PlaneGeometry(width + frameThickness*2, frameThickness), frameColor);
+                botFrame.position.set(0, -height/2 - frameThickness/2, zPos);
+                group.add(botFrame);
+
+                const leftFrame = new THREE.Mesh(new THREE.PlaneGeometry(frameThickness, height), frameColor);
+                leftFrame.position.set(-width/2 - frameThickness/2, 0, zPos);
+                group.add(leftFrame);
+
+                const rightFrame = new THREE.Mesh(new THREE.PlaneGeometry(frameThickness, height), frameColor);
+                rightFrame.position.set(width/2 + frameThickness/2, 0, zPos);
+                group.add(rightFrame);
+            }
+            createFrame(offsetZ); // Entrance frame
+            createFrame(offsetZ - tunnelLength); // Exit frame
+
+            // 4.5. Interstellar Wormhole — True Glossy 3D Sphere with CubeCamera
+            const sphereRadius = 30;
+            const wormholePos = new THREE.Vector3(0, 0, offsetZ + sphereRadius);
+            
+            // Core glossy sphere — uses live CubeCamera envMap for real bending of space
+            const sphereGeo = new THREE.SphereGeometry(sphereRadius, 128, 128);
+            const sphereMat = new THREE.MeshPhysicalMaterial({
+                envMap: cubeRenderTarget.texture,
+                envMapIntensity: 3.0,
+                transmission: 0.97,      // Nearly fully transparent glass
+                opacity: 1.0,
+                roughness: 0.0,          // Perfectly smooth mirror-glass
+                metalness: 0.0,
+                ior: 3.0,               // Very high IOR = extreme bending of light behind it
+                thickness: sphereRadius * 2.0, // Volume depth for chromatic dispersion
+                transparent: true,
+                side: THREE.FrontSide
+            });
+            const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+            sphere.position.copy(wormholePos);
+            // Hide sphere from CubeCamera so it doesn't reflect itself
+            sphere.layers.set(1);
+            group.add(sphere);
+
+            // Photon Ring — the intensely bright ring around the event horizon
+            const ringMat = new THREE.ShaderMaterial({
+                uniforms: { time: { value: 0 } },
+                vertexShader: `
+                    varying vec3 vNormal;
+                    varying vec3 vViewDir;
+                    void main() {
+                        vNormal = normalize(normalMatrix * normal);
+                        vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
+                        vViewDir = normalize(-mvPos.xyz);
+                        gl_Position = projectionMatrix * mvPos;
+                    }
+                `,
+                fragmentShader: `
+                    uniform float time;
+                    varying vec3 vNormal;
+                    varying vec3 vViewDir;
+                    void main() {
+                        float fresnel = pow(1.0 - abs(dot(vNormal, vViewDir)), 3.0);
+                        // Pulse the ring
+                        float pulse = 0.85 + 0.15 * sin(time * 2.5);
+                        // Blue-white photon ring color
+                        vec3 col = mix(vec3(0.5, 0.65, 1.0), vec3(1.0, 1.0, 1.0), fresnel) * pulse;
+                        float alpha = fresnel * 0.9;
+                        gl_FragColor = vec4(col * 2.5, alpha);
+                    }
+                `,
+                transparent: true,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false,
+                side: THREE.FrontSide
+            });
+            const ringGeo = new THREE.SphereGeometry(sphereRadius + 0.2, 128, 128);
+            const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+            ringMesh.position.copy(wormholePos);
+            group.add(ringMesh);
+
+            // Outer Gravitational Lensing Halo — large soft glow pulled around the sphere
+            const haloMat = new THREE.ShaderMaterial({
+                uniforms: {},
+                vertexShader: `
+                    varying vec3 vNormal;
+                    varying vec3 vViewDir;
+                    void main() {
+                        vNormal = normalize(normalMatrix * normal);
+                        vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
+                        vViewDir = normalize(-mvPos.xyz);
+                        gl_Position = projectionMatrix * mvPos;
+                    }
+                `,
+                fragmentShader: `
+                    varying vec3 vNormal;
+                    varying vec3 vViewDir;
+                    void main() {
+                        float rim = 1.0 - abs(dot(vNormal, vViewDir));
+                        rim = pow(rim, 4.0);
+                        vec3 col = vec3(0.25, 0.4, 1.0) * rim;
+                        gl_FragColor = vec4(col, rim * 0.5);
+                    }
+                `,
+                transparent: true,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false,
+                side: THREE.BackSide  // Renders on outside only
+            });
+            const haloGeo = new THREE.SphereGeometry(sphereRadius * 1.45, 64, 64);
+            const haloMesh = new THREE.Mesh(haloGeo, haloMat);
+            haloMesh.position.copy(wormholePos);
+            group.add(haloMesh);
+
+            wormholeSpheres.push({
+                sphere, ringMesh, cubeCamPos: wormholePos.clone()
+            });
+
+            // Internal Lights
+            const lightGeoV = new THREE.PlaneGeometry(0.2, 3);
+            const glowGeoV = new THREE.PlaneGeometry(3.0, 5.5);
+            const lightGeoH = new THREE.PlaneGeometry(8, 0.3);
+            const glowGeoH = new THREE.PlaneGeometry(14, 3.5);
+
+            for (let z = 0; z > -tunnelLength; z -= segmentLength) {
+                let actualZ = offsetZ + z;
+                
+                const ltLight = new THREE.Mesh(lightGeoV, materialLight);
+                ltLight.position.set(-width / 2 + 0.01, 2, actualZ);
+                ltLight.rotation.y = Math.PI / 2;
+                group.add(ltLight);
+                
+                const ltGlow = new THREE.Mesh(glowGeoV, materialGlow);
+                ltGlow.position.set(-width / 2 + 0.02, 2, actualZ);
+                ltGlow.rotation.y = Math.PI / 2;
+                group.add(ltGlow);
+
+                const lbLight = new THREE.Mesh(lightGeoV, materialLight);
+                lbLight.position.set(-width / 2 + 0.01, -2, actualZ);
+                lbLight.rotation.y = Math.PI / 2;
+                group.add(lbLight);
+
+                const lbGlow = new THREE.Mesh(glowGeoV, materialGlow);
+                lbGlow.position.set(-width / 2 + 0.02, -2, actualZ);
+                lbGlow.rotation.y = Math.PI / 2;
+                group.add(lbGlow);
+
+                const rtLight = new THREE.Mesh(lightGeoV, materialLight);
+                rtLight.position.set(width / 2 - 0.01, 2, actualZ);
+                rtLight.rotation.y = -Math.PI / 2;
+                group.add(rtLight);
+                
+                const rtGlow = new THREE.Mesh(glowGeoV, materialGlow);
+                rtGlow.position.set(width / 2 - 0.02, 2, actualZ);
+                rtGlow.rotation.y = -Math.PI / 2;
+                group.add(rtGlow);
+
+                const rbLight = new THREE.Mesh(lightGeoV, materialLight);
+                rbLight.position.set(width / 2 - 0.01, -2, actualZ);
+                rbLight.rotation.y = -Math.PI / 2;
+                group.add(rbLight);
+
+                const rbGlow = new THREE.Mesh(glowGeoV, materialGlow);
+                rbGlow.position.set(width / 2 - 0.02, -2, actualZ);
+                rbGlow.rotation.y = -Math.PI / 2;
+                group.add(rbGlow);
+
+                const cLight = new THREE.Mesh(lightGeoH, materialLight);
+                cLight.position.set(0, height / 2 - 0.01, actualZ);
+                cLight.rotation.x = Math.PI / 2;
+                group.add(cLight);
+
+                const cGlow = new THREE.Mesh(glowGeoH, materialGlow);
+                cGlow.position.set(0, height / 2 - 0.02, actualZ);
+                cGlow.rotation.x = Math.PI / 2;
+                group.add(cGlow);
+            }
+            scene.add(group);
+        }
+
+        // Build Tunnel 1 (The starting tunnel)
+        createTunnel(0);
+        // Build Tunnel 2 (The one we fly towards from space)
+        createTunnel(-loopLength);
+
+        // 5. Generate Tiled Outer Space (Starfield) for seamless looping
+        const starsGeo = new THREE.BufferGeometry();
+        const starsCount = 4000;
+        const posArray = new Float32Array(starsCount * 3);
+        
+        for(let i = 0; i < starsCount * 3; i+=3) {
+            posArray[i] = (Math.random() - 0.5) * 3000; 
+            posArray[i+1] = (Math.random() - 0.5) * 3000;
+            // Generate stars for exactly one loop block
+            posArray[i+2] = Math.random() * -loopLength; 
+        }
+        starsGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        
+        const starsMaterial = new THREE.PointsMaterial({
+            size: 2.0, color: '#ffffff', transparent: true, opacity: 0.9, fog: false
+        });
+        
+        // Clone the starfield across 3 blocks to prevent popping when the camera snaps back
+        const starMesh1 = new THREE.Points(starsGeo, starsMaterial);
+        starMesh1.position.z = 0;
+        scene.add(starMesh1);
+
+        const starMesh2 = new THREE.Points(starsGeo, starsMaterial);
+        starMesh2.position.z = -loopLength;
+        scene.add(starMesh2);
+
+        const starMesh3 = new THREE.Points(starsGeo, starsMaterial);
+        starMesh3.position.z = loopLength;
+        scene.add(starMesh3);
+
+        // Initial Camera State
+        camera.position.set(0, -1.5, 80);
+
+        // 6. Kinematic Animation Loop
+        let velocity = 0;
+        let acceleration = 0.0005; 
+        let maxVelocity = 2.0;
+        let isAccelerating = false;
+
+        setTimeout(() => {
+            isAccelerating = true;
+            document.getElementById('ui').style.opacity = '0';
+        }, 1500);
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (isAccelerating) {
+                acceleration += 0.00004; 
+                velocity += acceleration;
+                if (velocity > maxVelocity) velocity = maxVelocity;
+            }
+
+            camera.position.z -= velocity;
+
+            // Animate wormhole — update CubeCamera to capture live scene reflection
+            const time = performance.now() * 0.001;
+            wormholeSpheres.forEach(obj => {
+                // Update photon ring pulse time
+                obj.ringMesh.material.uniforms.time.value = time;
+                // Hide sphere so cubeCamera doesn't capture itself, then render, then show
+                obj.sphere.visible = false;
+                cubeCamera.position.copy(obj.cubeCamPos);
+                cubeCamera.update(renderer, scene);
+                obj.sphere.visible = true;
+                // Apply the fresh cube map
+                obj.sphere.material.envMap = cubeRenderTarget.texture;
+                obj.sphere.material.needsUpdate = true;
+            });
+
+            // Endless Loop Magic: When arriving at Tunnel 2, invisibly snap back to Tunnel 1
+            if (camera.position.z <= -loopLength) {
+                camera.position.z += loopLength;
+            }
+
+            const isInsideTunnel = camera.position.z > -tunnelLength;
+
+            if (isInsideTunnel) {
+                // Return to ground level and shake
+                camera.position.y += (-1.5 - camera.position.y) * 0.05;
+                if (velocity > 1.2) {
+                    camera.position.x = (Math.random() - 0.5) * (velocity - 1.2) * 0.06;
+                    camera.position.y += (Math.random() - 0.5) * (velocity - 1.2) * 0.06;
+                }
+                maxVelocity = 2.5; 
+            } else {
+                // Smoothly float to absolute center in zero-G
+                camera.position.x += (0 - camera.position.x) * 0.02;
+                camera.position.y += (0 - camera.position.y) * 0.02;
+                // Engage warp speed in open space
+                maxVelocity = 5.0; 
+            }
+
+            composer.render();
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>

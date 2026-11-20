@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>Clients - Grey Agency</title>
+    <meta name="description"
+        content="The brands Grey Agency films, designs and grows — tap a client to see their reels and designs.">
+
+    <link rel="icon" type="image/png" href="assets/images/grey logo 2.png">
+
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#d5cfce',
+                        'primary-dark': '#afacab',
+                        'secondary': '#989494',
+                        'dark': '#0f0f0f',
+                        'dark-light': '#1c1c1c',
+                    },
+                }
+            }
+        }
+    </script>
+
+    <link rel="stylesheet" href="css/styles.css?v=5">
+
+
+    <style>
+        /* ════════════════════════════════════════════════
+           CLIENTS PAGE — logo wall → one client's container
+           (same cinematic language as reels.html / designs.html)
+           ════════════════════════════════════════════════ */
+        .reels-page {
+            position: relative; min-height: 100vh; overflow-x: hidden;
+            background:
+                radial-gradient(1200px 600px at 15% -10%, rgba(213, 207, 206, 0.10), transparent 60%),
+                radial-gradient(1000px 700px at 100% 30%, rgba(152, 148, 148, 0.08), transparent 55%),
+                #0a0a0a;
+        }
+        .reels-orb { position: fixed; border-radius: 50%; filter: blur(70px); opacity: 0.45; pointer-events: none; z-index: 0; mix-blend-mode: screen; }
+        .reels-orb-1 { width: 38vw; height: 38vw; top: -8vw; left: -6vw; background: radial-gradient(circle, rgba(213,207,206,0.55), transparent 70%); animation: orbFloat1 22s ease-in-out infinite; }
+        .reels-orb-2 { width: 30vw; height: 30vw; bottom: -6vw; right: -4vw; background: radial-gradient(circle, rgba(152,148,148,0.45), transparent 70%); animation: orbFloat2 28s ease-in-out infinite; }
+        @keyframes orbFloat1 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(8vw,6vh) scale(1.15)} }
+        @keyframes orbFloat2 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(-7vw,-5vh) scale(1.1)} }
+        .reels-grain {
+            position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: 0.05;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        }
+
+        /* ── Hero ── */
+        .reels-hero { position: relative; z-index: 2; padding: 11rem 1.5rem 2.5rem; text-align: center; }
+        .reels-eyebrow {
+            display: inline-flex; align-items: center; gap: 0.85rem;
+            font-size: 0.72rem; letter-spacing: 0.42em; text-transform: uppercase; color: #afacab; margin-bottom: 1.6rem;
+            opacity: 0; transform: translateY(14px); animation: fadeUp 0.9s 0.1s cubic-bezier(.2,.7,.2,1) forwards;
+        }
+        .reels-eyebrow::before, .reels-eyebrow::after { content: ""; width: 46px; height: 1px; background: linear-gradient(90deg, transparent, #5a5856, transparent); }
+        .reels-title { font-weight: 900; line-height: 0.92; font-size: clamp(3rem, 12vw, 8.5rem); letter-spacing: -0.03em; margin: 0; direction: ltr; unicode-bidi: bidi-override; }
+        .reels-title .rc {
+            display: inline-block;
+            background: linear-gradient(135deg, #ffffff 0%, #d5cfce 45%, #8b8887 100%);
+            -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+            opacity: 0; transform: translateY(60px) rotateX(-60deg); animation: charDrop 0.85s cubic-bezier(.2,.7,.2,1) forwards;
+        }
+        @keyframes charDrop { to { opacity: 1; transform: translateY(0) rotateX(0); } }
+        .reels-sub {
+            margin: 1.6rem auto 0; max-width: 42rem; font-size: clamp(1rem, 2.4vw, 1.2rem); color: #8b8887; font-weight: 300;
+            opacity: 0; transform: translateY(14px); animation: fadeUp 0.9s 0.8s cubic-bezier(.2,.7,.2,1) forwards;
+        }
+        @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+        [dir="rtl"] .reels-eyebrow, [dir="rtl"] .reels-title { letter-spacing: 0; }
+
+        /* ── Reels ⇄ Designs ⇄ Clients switch ── */
+        @property --glow-ang { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+        @keyframes glowOrbit { to { --glow-ang: 360deg; } }
+        .pd-switch {
+            position: relative; z-index: 2; isolation: isolate; display: flex; width: fit-content; max-width: 100%;
+            gap: 4px; margin: 0 auto 2.2rem; padding: 5px; border-radius: 999px;
+            background: rgba(15,15,15,0.72); border: 1px solid rgba(255,255,255,0.12);
+            -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+        }
+        .pd-switch::before {
+            content: ""; position: absolute; inset: -2px; z-index: -1; border-radius: 999px;
+            background: conic-gradient(from var(--glow-ang), #ff6a00, #ffffff, #ffb24d, #ff5400, #ffffff, #ff6a00);
+            filter: blur(11px); opacity: 0.55; animation: glowOrbit 5s linear infinite;
+        }
+        .pd-seg {
+            position: relative; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.62rem 1.4rem; border-radius: 999px;
+            font-size: 0.92rem; font-weight: 700; color: #b9b6b5; text-decoration: none; white-space: nowrap; transition: color .35s ease, transform .35s ease;
+        }
+        .pd-seg svg { width: 18px; height: 18px; }
+        .pd-seg.is-active { color: #0f0f0f; background: linear-gradient(135deg, #ffffff, #d5cfce); box-shadow: 0 8px 22px -8px rgba(0,0,0,0.65); }
+        .pd-seg:not(.is-active):hover { color: #ffffff; transform: translateY(-1px); }
+        @media (max-width: 420px) { .pd-seg { padding: 0.55rem 0.9rem; font-size: 0.82rem; gap: 0.35rem; } .pd-seg svg { width: 15px; height: 15px; } }
+
+        /* ── Stats ── */
+        .cl-stats { position: relative; z-index: 2; display: flex; justify-content: center; gap: 2.5rem 4rem; flex-wrap: wrap; padding: 0 1.5rem 2.5rem; }
+        .cl-stat { text-align: center; }
+        .cl-stat b { display: block; font-size: clamp(1.8rem, 5vw, 2.8rem); font-weight: 800; background: linear-gradient(135deg, #d5cfce, #8b8887); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+        .cl-stat span { font-size: 0.74rem; letter-spacing: 0.2em; text-transform: uppercase; color: #6f6c6b; }
+        [dir="rtl"] .cl-stat span { letter-spacing: 0; font-size: 0.85rem; }
+
+        /* ── Search ── */
+        .cl-search { position: relative; z-index: 2; display: block; width: min(420px, calc(100% - 2rem)); margin: 0 auto 2rem; }
+        .cl-search input {
+            width: 100%; padding: 0.85rem 1.2rem 0.85rem 2.8rem; border-radius: 999px; font: inherit; font-size: 0.95rem;
+            color: #f5f1f0; background: rgba(20,20,20,0.75); border: 1px solid rgba(255,255,255,0.14); outline: none;
+        }
+        [dir="rtl"] .cl-search input { padding: 0.85rem 2.8rem 0.85rem 1.2rem; }
+        .cl-search input:focus { border-color: #d5cfce; }
+        .cl-search svg { position: absolute; top: 50%; inset-inline-start: 1rem; width: 18px; height: 18px; transform: translateY(-50%); color: #8b8887; pointer-events: none; }
+
+        /* ── Logo wall: each logo on its own large plate, uncropped ── */
+        .cl-wall {
+            position: relative; z-index: 2; display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+            gap: 20px; max-width: 1240px; margin: 0 auto; padding: 0 1.25rem 5rem; list-style: none;
+        }
+        .cl-tile {
+            position: relative; display: flex; flex-direction: column; width: 100%; height: 100%; padding: 0;
+            border-radius: 20px; overflow: hidden; cursor: pointer; text-align: start; color: inherit; font: inherit;
+            background: #121212; border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 14px 32px -18px rgba(0,0,0,0.7);
+            opacity: 0; transform: translateY(24px);
+            transition: transform 0.5s cubic-bezier(.16,1,.3,1), border-color 0.3s ease, opacity 0.6s ease, box-shadow 0.5s ease;
+        }
+        .cl-tile.in { opacity: 1; transform: translateY(0); }
+        /* The moving orange + white glow (as on the reels page): always on, brighter on hover / focus */
+        .cl-wall > li { position: relative; isolation: isolate; }
+        .cl-wall > li::before {
+            content: ""; position: absolute; inset: -9px; z-index: -1; border-radius: 28px; pointer-events: none;
+            background: conic-gradient(from var(--glow-ang), #ff6a00, #ffffff, #ffb24d, #ff5400, #ffffff, #ff7a18, #ff6a00);
+            filter: blur(16px); opacity: 0.55; transform: translateY(0);
+            transition: opacity 0.45s ease, transform 0.5s cubic-bezier(.16,1,.3,1); animation: glowOrbit 4s linear infinite;
+        }
+        .cl-wall > li:nth-child(even)::before { animation-delay: -2s; }
+        .cl-wall > li:hover::before, .cl-wall > li:focus-within::before { opacity: 1; inset: -13px; filter: blur(22px); transform: translateY(-6px); }
+        .cl-tile:hover, .cl-tile:focus-visible {
+            transform: translateY(-6px); border-color: rgba(255,255,255,0.3); outline: none;
+            box-shadow: 0 26px 46px -22px rgba(0,0,0,0.85);
+        }
+        .cl-tile:focus-visible { border-color: #d5cfce; box-shadow: 0 0 0 2px #d5cfce, 0 26px 46px -22px rgba(0,0,0,0.85); }
+
+        /* The plate. A photo logo sits at full size on a bed of its own colours:
+           the same image, scaled past the edges and blurred, so a logo on a flat
+           background reads edge to edge and a portrait gets a matching frame. */
+        .cl-plate { position: relative; display: grid; place-items: center; width: 100%; aspect-ratio: 1; overflow: hidden; background: #161616; }
+        .cl-plate.is-photo::before {
+            content: ""; position: absolute; inset: -18%;
+            background: var(--logo) center / cover no-repeat; filter: blur(30px) saturate(1.15);
+        }
+        .cl-plate img { position: relative; transition: transform 0.6s cubic-bezier(.16,1,.3,1); }
+        .cl-plate img.avatar {
+            width: min(76%, 180px); aspect-ratio: 1; object-fit: cover; border-radius: 14px;
+            box-shadow: 0 12px 26px -14px rgba(0,0,0,0.55);
+        }
+        .cl-plate.is-flat::before { display: none; }
+        .cl-plate.is-flat img.avatar { box-shadow: none; border-radius: 0; }
+        /* a soft pool of light behind the logo, so darker brand colours (navy, deep teal) still read */
+        .cl-plate.is-mark { background: radial-gradient(closest-side at 50% 48%, #3a3a3a, #1d1d1d 60%, #121212); }
+        .cl-plate img.mark { width: 60%; max-width: 84%; max-height: 66%; object-fit: contain; }
+        /* No logo yet: the name, set in the same white, as a stand-in wordmark */
+        .cl-plate .wordmark { position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.15em; max-width: 82%; text-align: center; color: #f5f1f0; }
+        .cl-plate .wordmark small { font-size: clamp(0.7rem, 1.3vw, 0.85rem); font-weight: 600; letter-spacing: 0.32em; text-transform: uppercase; color: #b9b6b5; }
+        [dir="rtl"] .cl-plate .wordmark small { letter-spacing: 0; font-size: clamp(0.85rem, 1.6vw, 1rem); }
+        .cl-plate .wordmark b { font-size: clamp(1.25rem, 2.6vw, 1.9rem); font-weight: 800; line-height: 1.12; text-wrap: balance; }
+        .cl-head .cl-plate .wordmark b { font-size: 1.35rem; }
+        .cl-plate.is-none { background: radial-gradient(closest-side at 50% 48%, #3a3a3a, #1d1d1d 60%, #121212); }
+        .cl-plate .initials { position: relative; font-weight: 900; font-size: clamp(2.6rem, 5vw, 3.6rem); line-height: 1; color: #d5cfce; letter-spacing: 0.04em; }
+        .cl-tile:hover .cl-plate img, .cl-tile:focus-visible .cl-plate img { transform: scale(1.05); }
+
+        .cl-info { display: flex; flex-direction: column; gap: 0.25rem; padding: 0.95rem 1.1rem 1.1rem; flex: 1; }
+        .cl-name { font-weight: 700; font-size: 1rem; line-height: 1.3; color: #f5f1f0; }
+        .cl-sector { font-size: 0.8rem; line-height: 1.4; color: #8b8887; }
+        .cl-count { margin-top: auto; padding-top: 0.55rem; font-size: 0.76rem; color: #b9b6b5; font-variant-numeric: tabular-nums; }
+        .cl-none { position: relative; z-index: 2; text-align: center; color: #8b8887; padding: 0 1rem 4rem; }
+        @media (max-width: 640px) {
+            .reels-hero { padding-top: 9rem; }
+            .cl-wall { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 0 0.75rem 4rem; }
+            .cl-tile { border-radius: 16px; }
+            .cl-plate img.avatar { width: 80%; border-radius: 10px; }
+            .cl-info { padding: 0.75rem 0.8rem 0.9rem; }
+            .cl-name { font-size: 0.9rem; }
+            .cl-sector { font-size: 0.75rem; }
+        }
+
+        /* ── One client's container ── */
+        .cl-detail { position: relative; z-index: 2; max-width: 1500px; margin: 0 auto; padding: 9.5rem 1rem 2rem; }
+        .cl-back {
+            display: inline-flex; align-items: center; gap: 0.5rem; margin: 0 0 1.8rem; padding: 0.6rem 1.1rem 0.6rem 0.85rem;
+            border-radius: 999px; background: rgba(20,20,20,0.7); border: 1px solid rgba(255,255,255,0.18);
+            color: #fff; font: inherit; font-size: 0.9rem; font-weight: 600; cursor: pointer;
+        }
+        .cl-back:hover { border-color: #d5cfce; }
+        .cl-back svg { width: 18px; height: 18px; }
+        [dir="rtl"] .cl-back svg { transform: scaleX(-1); }
+        .cl-head { display: flex; align-items: center; gap: 1.6rem; max-width: 1180px; margin: 0 auto 2.2rem; flex-wrap: wrap; }
+        .cl-head .cl-plate { width: 168px; flex: none; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); }
+        .cl-head .cl-plate img.avatar { width: 82%; }
+        .cl-head h1 { margin: 0; font-weight: 900; font-size: clamp(1.9rem, 5vw, 3.2rem); line-height: 1.1; color: #f5f1f0; }
+        .cl-meta { margin-top: 0.5rem; color: #8b8887; font-size: 1rem; }
+        .cl-links { display: flex; gap: 0.6rem; margin-top: 0.9rem; flex-wrap: wrap; }
+        .cl-links a {
+            display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.45rem 0.95rem; border-radius: 999px; font-size: 0.85rem;
+            color: #d5cfce; border: 1px solid rgba(213,207,206,0.35); text-decoration: none; transition: background .3s, color .3s;
+        }
+        .cl-links a:hover { background: #d5cfce; color: #0f0f0f; }
+        .cl-links svg { width: 16px; height: 16px; }
+        .cl-tabs { display: flex; justify-content: center; gap: 4px; width: fit-content; margin: 0 auto 1.6rem; padding: 5px; border-radius: 999px; background: rgba(15,15,15,0.72); border: 1px solid rgba(255,255,255,0.12); }
+        .cl-tab { padding: 0.6rem 1.4rem; border-radius: 999px; border: 0; background: none; color: #b9b6b5; font: inherit; font-weight: 700; font-size: 0.92rem; cursor: pointer; }
+        .cl-tab[aria-selected="true"] { color: #0f0f0f; background: linear-gradient(135deg, #ffffff, #d5cfce); }
+        .cl-tab small { opacity: 0.7; font-weight: 600; margin-inline-start: 0.3rem; }
+
+        /* ── Embedded work: same crop as the reels / designs pages ── */
+        .reels-grid {
+            position: relative; z-index: 1; display: grid;
+            /* up to 4 per row; a client with fewer pieces stays centred */
+            grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), var(--reel-w)));
+            gap: 26px; justify-content: center; align-items: start; max-width: calc(4 * var(--reel-w) + 3 * 26px + 2rem);
+            margin: 0 auto; padding: 18px 1rem 4rem;
+        }
+        .reels-page { --reel-w: 340px; }
+        .reel-card { position: relative; width: 100%; max-width: var(--reel-w); justify-self: center; opacity: 0; transform: translateY(40px) scale(0.96); transition: opacity 0.7s cubic-bezier(.2,.7,.2,1), transform 0.7s cubic-bezier(.2,.7,.2,1); }
+        .reel-card.in { opacity: 1; transform: translateY(0) scale(1); }
+        .reel-card::before {
+            content: ""; position: absolute; inset: -9px; z-index: -1; border-radius: 24px;
+            background: conic-gradient(from var(--glow-ang), #ff6a00, #ffffff, #ffb24d, #ff5400, #ffffff, #ff7a18, #ff6a00);
+            filter: blur(16px); opacity: 0.85; animation: glowOrbit 4s linear infinite;
+        }
+        .reel-card::after {
+            content: ""; position: absolute; inset: -2px; z-index: 2; border-radius: 16px; padding: 2px; pointer-events: none;
+            background: conic-gradient(from var(--glow-ang), transparent, #ffffff, #ff8a1e, transparent 38%, #ff5e00, #ffffff, transparent 72%);
+            -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+            animation: glowOrbit 4s linear infinite;
+        }
+        .reel-card:nth-child(even)::before, .reel-card:nth-child(even)::after { animation-delay: -2s; }
+        .reel-clip { position: relative; margin: 0; width: 100%; aspect-ratio: var(--reel-ar); overflow: hidden; border-radius: 14px; background: #000; }
+        /* reels: 9:16, Instagram pillarboxes the reel, so over-widen and lift */
+        .is-reel { --reel-ar: 9 / 16; --reel-fill: 158%; --reel-top: -13.5%; --reel-h: 230%; }
+        /* designs: 4:5 posts fill the embed width; only the header is cropped */
+        .is-design { --reel-ar: 4 / 5; --reel-fill: 100%; --reel-top: min(-13.2%, -44px); --reel-h: 250%; }
+        .reel-clip .instagram-media, .reel-clip iframe.ig {
+            position: absolute !important; top: var(--reel-top) !important; left: 50% !important; transform: translateX(-50%) !important;
+            width: var(--reel-fill) !important; height: var(--reel-h) !important; min-width: 0 !important; max-width: none !important;
+            margin: 0 !important; padding: 0 !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; background: #000 !important;
+        }
+        /* TikTok bare player fills the frame */
+        .reel-clip iframe.tt { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #000; }
+        /* Facebook video plugin */
+        .reel-clip iframe.fb { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+        .reel-skeleton { position: absolute; inset: 0; z-index: 0; background: linear-gradient(110deg, #141414 8%, #1e1e1e 18%, #141414 33%); background-size: 220% 100%; animation: shimmer 1.4s linear infinite; }
+        @keyframes shimmer { to { background-position-x: -220%; } }
+        .reel-clip.loaded .reel-skeleton { display: none; }
+        .reels-tappable { cursor: pointer; }
+        @media (max-width: 640px) { .reels-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @media (max-width: 640px) {
+            .cl-detail { padding-top: 8rem; padding-inline: 0.75rem; }
+            .cl-head { gap: 1rem; }
+            .cl-head .cl-plate { width: 112px; border-radius: 16px; }
+            .reels-grid { gap: 16px; padding: 14px 0 4rem; }
+            .is-reel { --reel-top: -17%; }
+            .is-design { --reel-fill: 108%; --reel-top: -62px; }
+        }
+
+        /* ── Fullscreen viewer (phones) ── */
+        .reel-modal { position: fixed; inset: 0; z-index: 100; background: rgba(8,8,8,0.96); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s; }
+        .reel-modal.open { opacity: 1; visibility: visible; }
+        .reel-modal .reel-clip { width: min(100vw, calc(100dvh * 9 / 16)); max-height: 100dvh; border-radius: 0; }
+        .reel-modal .is-design.reel-clip, .reel-modal .reel-clip.is-design { width: min(96vw, calc(90dvh * 4 / 5)); border-radius: 8px; }
+        .reel-modal-back {
+            position: absolute; top: calc(env(safe-area-inset-top, 0px) + 16px); inset-inline-start: 16px; z-index: 2;
+            display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.1rem 0.6rem 0.85rem; border-radius: 999px;
+            background: rgba(20,20,20,0.7); border: 1px solid rgba(255,255,255,0.18); color: #fff; font-size: 0.9rem; font-weight: 600; cursor: pointer;
+        }
+        .reel-modal-back svg { width: 18px; height: 18px; }
+        [dir="rtl"] .reel-modal-back svg { transform: scaleX(-1); }
+
+        /* ── Closing CTA ── */
+        .reels-cta-band { position: relative; z-index: 2; text-align: center; padding: 3rem 1.5rem 6rem; max-width: 46rem; margin: 0 auto; }
+        .reels-cta-band h2 { font-size: clamp(1.9rem, 5vw, 3rem); font-weight: 800; color: #f5f1f0; line-height: 1.1; }
+        .reels-cta-band p { color: #8b8887; margin: 1rem auto 2rem; max-width: 32rem; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .reels-orb, .pd-switch::before, .reel-card::before, .reel-card::after, .cl-wall > li::before { animation: none; }
+            .reels-title .rc, .reels-eyebrow, .reels-sub { animation-duration: 0.01s; animation-delay: 0s !important; }
+            .cl-tile, .reel-card { transition: none; }
+        }
+    </style>
+</head>
+
+<body class="bg-dark text-white font-sans antialiased reels-page"
+    style="font-family: 'Cairo', 'Hacen Maghreb', sans-serif; color: #fef7f5;">
+
+    <div class="reels-orb reels-orb-1"></div>
+    <div class="reels-orb reels-orb-2"></div>
+    <div class="reels-grain"></div>
+
+    <!-- ═══════════ NAV ═══════════ -->
+    <nav class="fixed top-0 inset-x-0 z-50 pt-4 px-4 sm:px-6 lg:px-8">
+        <div class="container mx-auto">
+            <div class="bg-dark/95 backdrop-blur-sm border border-primary rounded-full px-6 sm:px-8 lg:px-12">
+                <div class="flex items-center justify-between h-16 sm:h-20">
+                    <a href="index.html" class="flex items-center hover:opacity-80 transition-opacity duration-300">
+                        <img src="assets/images/grey logo 2.png" alt="Grey Agency" class="h-10 sm:h-12 w-auto">
+                    </a>
+
+                    <div class="hidden md:flex items-center gap-x-6 lg:gap-x-8">
+                        <a href="index.html#home"
+                            class="nav-link text-white hover:text-primary transition-colors duration-300 text-sm lg:text-base" data-i18n="nav_home">Home</a>
+                        <a href="index.html#about"
+                            class="nav-link text-white hover:text-primary transition-colors duration-300 text-sm lg:text-base" data-i18n="nav_about">About</a>
+                        <a href="index.html#services"
+                            class="nav-link text-white hover:text-primary transition-colors duration-300 text-sm lg:text-base" data-i18n="nav_services">Services</a>
+                        <a href="reels.html"
+                            class="nav-link text-white hover:text-primary transition-colors duration-300 text-sm lg:text-base" data-i18n="nav_reels">Reels</a>
+                        <a href="designs.html"
+                            class="nav-link text-white hover:text-primary transition-colors duration-300 text-sm lg:text-base" data-i18n="nav_designs">Designs</a>
+                        <a href="clients.html"
+                            class="nav-link text-primary transition-colors duration-300 text-sm lg:text-base" data-i18n="nav_clients" aria-current="page">Clients</a>
+                        <a href="portfolio.html"
+                            class="nav-link text-white hover:text-primary transition-colors duration-300 text-sm lg:text-base" data-i18n="nav_portfolio">Portfolio</a>
+                        <button class="lang-toggle" aria-label="Switch language">عربي</button>
+                        <a href="contact.html"
+                            class="bg-primary border border-primary hover:bg-primary-dark px-5 lg:px-6 py-2 rounded-full font-semibold text-sm lg:text-base transition-all duration-300 hover:scale-105"
+                            style="color: #0f0f0f;" data-i18n="nav_contact">
+                            Contact Us
+                        </a>
+                    </div>
+
+                    <button id="mobile-menu-btn" class="md:hidden text-white hover:text-primary transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="mobile-menu" class="hidden md:hidden mt-4 mx-4 bg-dark-light border border-primary rounded-2xl">
+            <div class="container mx-auto px-6 py-6 space-y-4">
+                <a href="index.html#home" class="block text-white hover:text-primary transition-colors py-2" data-i18n="nav_home">Home</a>
+                <a href="index.html#about" class="block text-white hover:text-primary transition-colors py-2" data-i18n="nav_about">About</a>
+                <a href="index.html#services" class="block text-white hover:text-primary transition-colors py-2" data-i18n="nav_services">Services</a>
+                <a href="reels.html" class="block text-white hover:text-primary transition-colors py-2" data-i18n="nav_reels">Reels</a>
+                <a href="designs.html" class="block text-white hover:text-primary transition-colors py-2" data-i18n="nav_designs">Designs</a>
+                <a href="clients.html" class="block text-primary transition-colors py-2" data-i18n="nav_clients" aria-current="page">Clients</a>
+                <a href="portfolio.html" class="block text-white hover:text-primary transition-colors py-2" data-i18n="nav_portfolio">Portfolio</a>
+                <button class="lang-toggle w-full py-2 text-center" aria-label="Switch language">عربي</button>
+                <a href="contact.html"
+                    class="block bg-primary border border-primary hover:bg-primary-dark px-6 py-3 rounded-full font-semibold text-center transition-all duration-300"
+                    style="color: #0f0f0f;" data-i18n="nav_contact">
+                    Contact Us
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ═══════════ ALL CLIENTS: THE LOGO WALL ═══════════ -->
+    <div id="cl-index">
+        <header class="reels-hero">
+            <div class="pd-switch" role="group" aria-label="Switch between Reels, Designs and Clients">
+                <a href="reels.html" class="pd-seg">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                    <span data-i18n="nav_reels">Reels</span>
+                </a>
+                <a href="designs.html" class="pd-seg">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+                    <span data-i18n="nav_designs">Designs</span>
+                </a>
+                <a href="clients.html" class="pd-seg is-active" aria-current="page">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><circle cx="17.5" cy="9" r="2.5"/><path d="M16 14.6c2.7.2 4.6 1.9 5.3 4.9"/></svg>
+                    <span data-i18n="nav_clients">Clients</span>
+                </a>
+            </div>
+            <span class="reels-eyebrow" data-i18n="clients_eyebrow">Brands we create for</span>
+            <h1 class="reels-title" aria-label="Clients">
+                <span class="rc" style="animation-delay:.15s">C</span><span class="rc" style="animation-delay:.24s">L</span><span class="rc" style="animation-delay:.33s">I</span><span class="rc" style="animation-delay:.42s">E</span><span class="rc" style="animation-delay:.51s">N</span><span class="rc" style="animation-delay:.6s">T</span><span class="rc" style="animation-delay:.69s">S</span>
+            </h1>
+            <p class="reels-sub" data-i18n="clients_sub">Every logo here is a brand we film, design and grow. Tap one to see the reels and designs we made for them.</p>
+        </header>
+
+        <div class="cl-stats">
+            <div class="cl-stat"><b data-stat="clients">0</b><span data-i18n="clients_stat_clients">Clients</span></div>
+            <div class="cl-stat"><b data-stat="reels">0</b><span data-i18n="clients_stat_reels">Reels</span></div>
+            <div class="cl-stat"><b data-stat="designs">0</b><span data-i18n="clients_stat_designs">Designs</span></div>
+        </div>
+
+        <label class="cl-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5" stroke-linecap="round"/></svg>
+            <span class="sr-only" data-i18n="clients_search">Search clients</span>
+            <input type="search" id="cl-q" data-i18n-placeholder="clients_search" placeholder="Search clients" autocomplete="off">
+        </label>
+
+        <ul class="cl-wall" id="cl-wall"></ul>
+        <p class="cl-none" id="cl-none" hidden data-i18n="clients_empty">No client matches your search.</p>
+    </div>
+
+    <!-- ═══════════ ONE CLIENT'S CONTAINER ═══════════ -->
+    <section class="cl-detail" id="cl-detail" hidden aria-labelledby="cl-title">
+        <button type="button" class="cl-back" id="cl-back">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span data-i18n="clients_all">All clients</span>
+        </button>
+        <div class="cl-head">
+            <div id="cl-logo"></div>
+            <div>
+                <h1 id="cl-title"></h1>
+                <div class="cl-meta" id="cl-meta"></div>
+                <div class="cl-links" id="cl-links"></div>
+            </div>
+        </div>
+        <div class="cl-tabs" role="tablist" id="cl-tabs">
+            <button type="button" class="cl-tab" role="tab" data-tab="reels"><span data-i18n="clients_stat_reels">Reels</span><small data-n="reels"></small></button>
+            <button type="button" class="cl-tab" role="tab" data-tab="designs"><span data-i18n="clients_stat_designs">Designs</span><small data-n="designs"></small></button>
+        </div>
+        <div class="reels-grid" id="cl-grid" role="tabpanel"></div>
+    </section>
+
+    <div class="reel-modal" id="reel-modal" aria-hidden="true">
+        <button class="reel-modal-back" id="reel-modal-back" aria-label="Back">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span data-i18n="reels_back">Back</span>
+        </button>
+        <div class="reel-clip" id="reel-modal-clip"></div>
+    </div>
+
+    <section class="reels-cta-band">
+        <h2 data-i18n="clients_cta_h">Your brand could be the next logo on this wall.</h2>
+        <p data-i18n="clients_cta_p">Tell us about your project — we'll handle the filming, the design and the growth.</p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <a href="contact.html" class="inline-flex items-center gap-2 bg-primary hover:bg-primary-dark px-9 py-4 rounded-full font-semibold text-lg transition-all duration-300 hover:scale-105 glow-effect" style="color: #0f0f0f;">
+                <span data-i18n="clients_cta_btn">Start Your Project</span>
+            </a>
+        </div>
+    </section>
+
+    <!-- ═══════════ FOOTER ═══════════ -->
+    <footer class="bg-dark-light border-t border-primary/20 py-12 relative z-10">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+                <div class="md:col-span-2">
+                    <h3 class="text-2xl font-bold text-gradient mb-4" data-i18n="footer_brand">Grey Agency</h3>
+                    <p class="mb-4 max-w-md" style="color: #6f6c6b;" data-i18n="footer_tagline">
+                        Transforming brands through strategic creativity and innovative marketing solutions.
+                    </p>
+                    <div class="flex gap-x-4">
+                        <a href="https://www.facebook.com/share/17qPzrv846/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer"
+                            class="w-10 h-10 bg-dark border border-primary/20 rounded-full flex items-center justify-center hover:bg-primary hover:border-primary transition-all duration-300 hover:scale-110">
+                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                        </a>
+                        <a href="https://www.instagram.com/grey_agencyy?igsh=MXZvZzYzYXd5cXd1Mg==" target="_blank" rel="noopener noreferrer"
+                            class="w-10 h-10 bg-dark border border-primary/20 rounded-full flex items-center justify-center hover:bg-primary hover:border-primary transition-all duration-300 hover:scale-110">
+                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                        </a>
+                        <a href="https://www.tiktok.com/@grey.agency6" target="_blank" rel="noopener noreferrer"
+                            class="w-10 h-10 bg-dark border border-primary/20 rounded-full flex items-center justify-center hover:bg-primary hover:border-primary transition-all duration-300 hover:scale-110">
+                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/></svg>
+                        </a>
+                        <a href="https://youtube.com/@greyagency-o1h?si=uyyGb6_7PHduOeIf" target="_blank" rel="noopener noreferrer"
+                            class="w-10 h-10 bg-dark border border-primary/20 rounded-full flex items-center justify-center hover:bg-primary hover:border-primary transition-all duration-300 hover:scale-110">
+                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                        </a>
+                        <a href="https://www.linkedin.com/company/grey-agencyy/" target="_blank" rel="noopener noreferrer"
+                            class="w-10 h-10 bg-dark border border-primary/20 rounded-full flex items-center justify-center hover:bg-primary hover:border-primary transition-all duration-300 hover:scale-110">
+                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                        </a>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="text-white font-semibold mb-4" data-i18n="footer_links_h">Quick Links</h4>
+                    <ul class="space-y-2">
+                        <li><a href="index.html#home" class="text-gray-400 hover:text-primary transition-colors" data-i18n="footer_link_home">Home</a></li>
+                        <li><a href="index.html#about" class="text-gray-400 hover:text-primary transition-colors" data-i18n="footer_link_about">About</a></li>
+                        <li><a href="index.html#services" class="text-gray-400 hover:text-primary transition-colors" data-i18n="footer_link_services">Services</a></li>
+                        <li><a href="reels.html" class="text-gray-400 hover:text-primary transition-colors" data-i18n="nav_reels">Reels</a></li>
+                        <li><a href="designs.html" class="text-gray-400 hover:text-primary transition-colors" data-i18n="nav_designs">Designs</a></li>
+                        <li><a href="clients.html" class="text-gray-400 hover:text-primary transition-colors" data-i18n="nav_clients">Clients</a></li>
+                        <li><a href="portfolio.html" class="text-gray-400 hover:text-primary transition-colors" data-i18n="footer_link_portfolio">Portfolio</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="text-white font-semibold mb-4" data-i18n="footer_contact_h">Contact</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li>info@greymarketingsolutions.com</li>
+                        <li>+20 106 272 7462</li>
+                        <li>+966 50 487 1435</li>
+                        <li>Cairo | Mansoura | Riyadh | Jeddah</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="border-t border-primary/20 pt-8 text-center text-gray-400">
+                <p data-i18n="footer_copy">&copy; 2026 Grey Agency. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <button id="scroll-to-top"
+        class="fixed bottom-8 end-8 bg-primary hover:bg-primary-dark p-4 rounded-full shadow-lg transition-all duration-300 hover:scale-110 z-50 glow-effect"
+        style="color: #0f0f0f;" aria-label="Scroll to top">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
+        </svg>
+    </button>
+
+    <script src="js/clients-data.js?v=8"></script>
+    <script src="js/clients.js?v=7"></script>
+    <script async src="https://www.instagram.com/embed.js"></script>
+    <script src="js/main.js?v=6"></script>
+</body>
+
+</html>
